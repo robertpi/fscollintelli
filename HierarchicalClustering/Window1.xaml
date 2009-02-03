@@ -1,0 +1,12 @@
+﻿<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    Title="Blog Hierarical Clustering" Height="600" Width="800">
+    <Grid>
+        <Button Height="23" HorizontalAlignment="Right" Name="startButton" VerticalAlignment="Top" Width="75">Start</Button>
+        <TextBox Height="23" Margin="0,1.861,108,0" Name="opmlUrl" VerticalAlignment="Top">http://www.currybet.net/download/opml/top100ukblogs.xml</TextBox>
+        <TextBox Height="23" HorizontalAlignment="Right" Margin="0,1.862,79,0" Name="urlLimit" VerticalAlignment="Top" Width="24">12</TextBox>
+        <TreeView Name="outputTree" Margin="0,32,138,30" />
+        <TextBox Name="outputDetail" Width="138" HorizontalAlignment="Right" Margin="0,32,0,30" />
+        <TextBox Height="23" Name="statusBar" VerticalAlignment="Bottom" IsReadOnly="True" />
+    </Grid>
+</Window>
