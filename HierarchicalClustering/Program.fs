@@ -10,6 +10,7 @@ open System.Xml
 open System.Windows.Threading
 open System.Threading
 open System.ComponentModel
+open System.Diagnostics
 open Strangelights.Extensions
 open Strangelights.HierarchicalClustering
     
@@ -28,22 +29,34 @@ let main() =
     let opmlUrl = window.FindName("opmlUrl") :?> TextBox
     let urlLimit = window.FindName("urlLimit") :?> TextBox
     let outputDetail = window.FindName("outputDetail") :?> TextBox
+    let allWords = window.FindName("allWords") :?> TextBox
+    let masterWordList = window.FindName("masterWordList") :?> TextBox
+    let choosenWords = window.FindName("choosenWords") :?> TextBox
     let treeView = window.FindName("outputTree") :?> TreeView
+    let upperBounds = window.FindName("upperBounds") :?> TextBox
+    let lowerBounds = window.FindName("lowerBounds") :?> TextBox
+    let processWords words =
+        words
+        |> Seq.filter (fun (word, count) -> count > 0.)
+        |> Seq.sort_by (fun (_, count) -> count)
+        |> Seq.to_list
+        |> List.rev
     treeView.SelectedItemChanged.Add(fun ea -> 
-        let tvi = ea.NewValue :?> TreeViewItem
-        let node = tvi.Tag :?> BiculsterNode
-        let words = Map.to_seq node.Cluster
-        let words = 
-            words
-            |> Seq.filter (fun (word, count) -> count > 0.)
-            |> Seq.sort_by (fun (_, count) -> count)
-            |> Seq.to_list
-            |> List.rev
-        outputDetail.Text <- ""
-        (match node.Distance with
-        | Some dist -> outputDetail.AppendText(Printf.sprintf "Distance: %f\n\n" dist)
-        | None ->())
-        Seq.iter (fun (word, count) ->  outputDetail.AppendText(Printf.sprintf "%s: %f\n" word count)) words)
+        if ea.NewValue <> null then
+            let tvi = ea.NewValue :?> TreeViewItem
+            let node = tvi.Tag :?> BiculsterNode
+            let usedWords = processWords (Map.to_seq node.Cluster)
+            let orginalWords = 
+                match node.OriginalCluster with
+                | Some x -> processWords (Map.to_seq x)
+                | None -> []
+            outputDetail.Text <- ""
+            allWords.Text <- ""
+            (match node.Distance with
+            | Some dist -> outputDetail.AppendText(Printf.sprintf "Distance: %f\n\n" dist)
+            | None ->())
+            Seq.iter (fun (word, count) ->  outputDetail.AppendText(Printf.sprintf "%s: %f\n" word count)) usedWords
+            Seq.iter (fun (word, count) ->  allWords.AppendText(Printf.sprintf "%s: %f\n" word count)) orginalWords)
     let statusBar = window.FindName("statusBar") :?> TextBox
     let progress s =
         statusBar.Dispatcher.Invoke(DispatcherPriority.Normal, new Invokee(fun _ -> statusBar.Text <- s)) |> ignore
@@ -67,13 +80,21 @@ let main() =
         enable false
         let bgwkr = new BackgroundWorker()
         let url, limit = opmlUrl.Text, Int32.Parse(urlLimit.Text)
+        let upperBounds, lowerBounds = Double.Parse(upperBounds.Text), Double.Parse(lowerBounds.Text) 
         treeView.Items.Clear()
-        bgwkr.DoWork.Add(fun ea -> 
-            ea.Result <- Algorithm.processOpml progress url 0.003 0.02 limit)
+        let stopwatch = new Stopwatch()
+        bgwkr.DoWork.Add(fun ea ->
+            stopwatch.Start()
+            ea.Result <- Algorithm.processOpml progress url lowerBounds upperBounds limit)
         bgwkr.RunWorkerCompleted.Add(fun ea -> 
-            drawTree treeView.Items (ea.Result :?> BiculsterNode)
+            stopwatch.Stop()
+            let result = ea.Result :?> Result
+            drawTree treeView.Items result.BiculsterTree
+            let total = float result.MasterWordList.Count
+            Seq.iter (fun (word, count) ->  masterWordList.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count (count / total))) (processWords (Map.to_seq result.MasterWordList))
+            Seq.iter (fun word ->  choosenWords.AppendText(Printf.sprintf "%s\n" word)) result.ChosenWords
             enable true
-            progress "Done")
+            progress (Printf.sprintf "Done - Processed: %i in %O" result.ProcessedBlogs stopwatch.Elapsed))
         bgwkr.RunWorkerAsync()
     startButton.Click.Add(fun _ -> start())
     let app = new Application() in 
