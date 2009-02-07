@@ -3,30 +3,35 @@
     Title="Blog Hierarical Clustering" Height="600" Width="800">
     <Grid>
         <Button Height="23" HorizontalAlignment="Right" Name="startButton" VerticalAlignment="Top" Width="75">Start</Button>
-        <TextBox Height="23" Margin="0,1.861,108,0" Name="opmlUrl" VerticalAlignment="Top">http://www.currybet.net/download/opml/top100ukblogs.xml</TextBox>
+        <TextBox Height="23" Margin="0,1.861,77.77,0" Name="opmlUrl" VerticalAlignment="Top">http://www.currybet.net/download/opml/top100ukblogs.xml</TextBox>
         <TextBox Height="23" Name="statusBar" VerticalAlignment="Bottom" IsReadOnly="True" />
         <TabControl Margin="0,62.216,0,28.58">
             <TabItem Header="Tree">
                 <Grid>
-                    <TreeView Name="outputTree" Margin="0,0,274.368,0" />
-                    <TextBox Name="outputDetail" Width="138" HorizontalAlignment="Right" VerticalScrollBarVisibility="Auto" />
-                    <TextBox Name="allWords" HorizontalAlignment="Left" Margin="491.387,0,0,0" Width="138" VerticalScrollBarVisibility="Auto" />
+                    <TreeView Name="outputTree" Margin="0,0,281.083,0" />
+                    <TextBox Name="usedWords" IsReadOnly="True" Width="138" HorizontalAlignment="Right" VerticalScrollBarVisibility="Auto" Margin="0,95.546,0,0" HorizontalScrollBarVisibility="Auto" />
+                    <TextBox Name="allWords" IsReadOnly="True" HorizontalAlignment="Right" Margin="0,95.546,138.875,0" Width="136.653" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                    <TextBox Name="outputDetail" Height="93.324" HorizontalAlignment="Right" VerticalAlignment="Top" Width="275.528" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
                 </Grid>
             </TabItem>
             <TabItem Header="Master Word List">
                 <Grid>
-                    <TextBox Name="masterWordList" Width="138" HorizontalAlignment="Right" VerticalScrollBarVisibility="Auto" />
-                    <TextBox Name="choosenWords" HorizontalAlignment="Left" Margin="491.387,0,0,0" Width="138" VerticalScrollBarVisibility="Auto" />
+                    <TextBox Name="choosenWords" IsReadOnly="True" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Left" Width="241.501" HorizontalScrollBarVisibility="Auto" />
+                    <TextBox Name="choosenWordsAlph" IsReadOnly="True" Margin="267.223,1.429,268.652,-1.429" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                    <TextBox Name="masterWordList" IsReadOnly="True" HorizontalAlignment="Right" VerticalScrollBarVisibility="Auto" Width="241.501" HorizontalScrollBarVisibility="Auto" />
                 </Grid>
             </TabItem>
-            <TabItem Header="Current Post">
-                <WebBrowser Name="postBrowser" />
+            <TabItem Header="Current Post" Name="currentPost">
+                <Grid>
+                    <WebBrowser Name="postBrowser" Margin="0,37.154,0,0" />
+                    <TextBox Name="currentUrl" IsReadOnly="True" Height="23" VerticalAlignment="Top" Margin="0,0,-0.576,0" />
+                </Grid>
             </TabItem>
         </TabControl>
-        <TextBox Name="urlLimit" Height="23" HorizontalAlignment="Left" Margin="72.215,32.219,0,0" VerticalAlignment="Top" Width="24">12</TextBox>
-        <TextBox Name="timeout" Height="23" HorizontalAlignment="Right" Margin="0,32.219,577.72,0" VerticalAlignment="Top" Width="24">30</TextBox>
-        <TextBox Name="lowerBounds" Height="23" Margin="264.718,32.219,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="52.217">0.003</TextBox>
-        <TextBox Name="upperBounds" Height="23" HorizontalAlignment="Left" Margin="325.523,32.219,0,0" VerticalAlignment="Top" Width="52.217">0.02</TextBox>
+        <TextBox Name="urlLimit" Height="23" HorizontalAlignment="Left" Margin="72.215,32.219,0,0" VerticalAlignment="Top" Width="31.108">12</TextBox>
+        <TextBox Name="timeout" Height="23" HorizontalAlignment="Left" Margin="175.538,32.219,0,0" VerticalAlignment="Top" Width="24">30</TextBox>
+        <TextBox Name="lowerBounds" Height="23" Margin="264.718,32.219,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="52.217">0.3</TextBox>
+        <TextBox Name="upperBounds" Height="23" HorizontalAlignment="Left" Margin="325.523,32.219,0,0" VerticalAlignment="Top" Width="52.217">2</TextBox>
         <Label Height="28" HorizontalAlignment="Left" Margin="5,30.219,0,0" VerticalAlignment="Top" Width="63.327">Url Limit:</Label>
         <Label Height="28" HorizontalAlignment="Left" Margin="111.1,30.219,0,0" VerticalAlignment="Top" Width="63.327">Timeout:</Label>
         <Label Height="28" HorizontalAlignment="Left" Margin="209.979,30.219,0,0" VerticalAlignment="Top" Width="63.327">Bounds:</Label>

@@ -12,7 +12,7 @@ open Strangelights.HierarchicalClustering
 type Blog = 
     { Title: string;
       Url: string;
-      Wordcount: Map<string,float>; }
+      BlogWordCount: Map<string,float>; }
 
 /// The internal type of messages for the agent
 type Message = 
@@ -25,12 +25,12 @@ type ReceiveBlogAgent() =
              let rec loop((masterList: Map<string,float>), (blogs: list<Blog>)) =
                 async { let! msg = inbox.Receive()
                         match msg with
-                        | NewBlog ({ Wordcount = wc } as blog) ->
+                        | NewBlog ({ BlogWordCount = wc } as blog) ->
                             let masterList = MapOps.mergeFloatMap masterList wc
                             return! loop( masterList, blog :: blogs)
                                
                         | Fetch  replyChannel  ->
-                            // post response to reply channel and continue
+                            // post response to reply channel and end
                             do replyChannel.Reply(masterList, Seq.of_list blogs)
                             return () }
  
@@ -39,15 +39,23 @@ type ReceiveBlogAgent() =
     member a.AddBlog(n) = counter.Post(NewBlog(n))
     member a.Fetch() = counter.PostAndReply(fun replyChannel -> Fetch replyChannel )
 
-/// Type thtat will represent the cluster tree
-type BiculsterNode =
-    { Name: option<string>;
-      Url: option<string>;
-      Left: option<BiculsterNode>;
-      Right: option<BiculsterNode>;
-      Distance: option<float>;
-      Cluster: Map<string,float>;
-      OriginalCluster: option<Map<string,float>> }
+type LeafDetails =
+    { Name: string;
+      Url: string;
+      OriginalWordCount: Map<string,float> }
+      
+type BiculsterNodeDetails =
+    | Node of NodeDetails
+    | Leaf of LeafDetails
+    
+and NodeDetails =
+    { Left: BiculsterNode;
+      Right: BiculsterNode;
+      Distance: float; }
+      
+and BiculsterNode =
+    { WordCount: Map<string,float>;
+      NodeDetails: BiculsterNodeDetails; }
 
 type Result = 
     { BiculsterTree: BiculsterNode;
@@ -68,7 +76,7 @@ module Algorithm =
 
     /// regualar expressions of processing the HTML    
     let stripHtml = new Regex("<[^>]+>", RegexOptions.Compiled)
-    let splitChars = new Regex(@"\s|\n|\.|,|\!|\?|“|”|…|\||\(|\)|\[|\]|\-", RegexOptions.Compiled)
+    let splitChars = new Regex(@"\&\#8217;|\&\#160;|\&\#039;|\&\#8216;|\&\#8220;|\&quot;|\&mdash;|\&lt;|\&pound;|\&mdash;|\s|\n|\.|,|\!|\?|“|”|""|…|\||\(|\)|\[|\]|\-|\#|\&|;|\+|\*", RegexOptions.Compiled)
 
     /// action that turns an RSS stream into a map of word/count pairs
     let treatRss title url (receiver: ReceiveBlogAgent) progress (stream: Stream) =
@@ -92,7 +100,7 @@ module Algorithm =
         let posts = DataAccess.queryXdoc xdoc "rss/channel/item/description"
         progress (Printf.sprintf "items: %i" (Seq.length posts))
         let wordMap = treatPostList posts
-        let blog = { Title = title; Url = url; Wordcount = wordMap }
+        let blog = { Title = title; Url = url; BlogWordCount = wordMap }
         receiver.AddBlog blog
 
 
@@ -100,29 +108,32 @@ module Algorithm =
     let opmlFileToTitleUlrs progress url limit = 
         let urlsWorkflow = DataAccess.getContents progress url treatOpml (Seq.of_list [])
         let urls = Async.Run urlsWorkflow
-        Seq.take limit urls
+        Seq.take (min limit (Seq.length urls)) urls
 
     /// download rss files and turn into word/count maps     
-    let titleUlrsToWordCountMap progress urls = 
+    let titleUlrsToWordCountMap progress timeout urls = 
         let receiver = new ReceiveBlogAgent()
         let flows = 
             urls 
             |> Seq.map (fun (title, url) -> 
                 DataAccess.getContents progress url (treatRss title url receiver) ())
         try
-            Async.Run (Async.Parallel flows, timeout = 30000) |> ignore
+            Async.Run (Async.Parallel flows, timeout = timeout) |> ignore
         with :? TimeoutException -> progress "Request timed out"
         receiver.Fetch()
 
     /// turns a list of cluster nodes into a hierarchal cluster tree
     let buildClusterTree progress clusters =
         let keys m = Map.to_seq m |> PSeq.map snd
-        let compareNodes { Cluster = c1 } { Cluster = c2 } =
+        let compareNodes { WordCount = c1 } { WordCount = c2 } =
             let wc1, wc2 = keys c1, keys c2
             Distributions.pearson wc1 wc2
         let initComparisons = 
             progress (Printf.sprintf "Building initial comparison set ...")
-            SeqenceOps.combinations2 clusters
+            let clusters = Set.to_seq (Set.of_seq clusters)
+            let clusterParis = SeqenceOps.combinations2 clusters
+            //Seq.iter (fun (x,y) -> if x = y then System.Windows.MessageBox.Show ("found pair " + (any_to_string x) + (any_to_string y)) |> ignore) toto
+            clusterParis
             |> PSeq.map (fun (c1, c2) -> compareNodes c1 c2, (c1, c2))
             |> Map.of_seq
         let averageWordMap wc1 wc2 =
@@ -132,14 +143,12 @@ module Algorithm =
             let first = Map.first (fun dist culst ->  Some(dist, culst)) comparisons
             let (dist, (c1, c2)) = Option.get first
             progress (Printf.sprintf "clusters: %i comparisons: %i" (Seq.length clusters) (Seq.length comparisons))
+            //if c1 = c2 then System.Windows.MessageBox.Show (Printf.sprintf "clusters: %i comparisons: %i" (Seq.length clusters) (Seq.length comparisons)) |> ignore
             let restComps = Map.filter (fun _ (c1', c2') -> not (c1 = c1' || c2 = c2' || c1 = c2' || c1' = c2)) comparisons
-            let node = { Name = None;
-                         Url = None
-                         Left = Some c1;
-                         Right = Some c2;
-                         Distance = Some dist;
-                         Cluster = averageWordMap c1.Cluster c2.Cluster;
-                         OriginalCluster = None }
+            let node = { WordCount = averageWordMap c1.WordCount c2.WordCount;
+                         NodeDetails = Node { Left = c1;
+                                              Right = c2;
+                                              Distance = dist; } }
             let restClusters = Seq.filter (fun x -> not (x = c1 || x = c2)) clusters
             let newComps = PSeq.map (fun c -> compareNodes node c, (node, c)) restClusters
             let comparisons = PSeq.fold (fun acc (dist, comps) -> Map.add dist comps acc) restComps newComps
@@ -181,24 +190,22 @@ module Algorithm =
         let clustersList =
             blogs
             |> Seq.sort_by (fun { Title = title } -> title)
-            |> PSeq.map (fun { Title = title; Url = url; Wordcount = wordmap } -> 
-                { Name = Some title;
-                  Url = Some url;
-                  Left = None;
-                  Right = None;
-                  Distance = None;
-                  Cluster = addjustToMasterList wordmap;
-                  OriginalCluster = Some wordmap})
+            |> PSeq.map (fun { Title = title; Url = url; BlogWordCount = wordmap } ->
+                    { WordCount = addjustToMasterList wordmap;
+                      NodeDetails = Leaf { Name = title;
+                                           Url = url;
+                                           OriginalWordCount = wordmap; }; })
 
         buildClusterTree progress clustersList, masterWordList
 
     /// process a word count into a hierarical cluster.
-    let processOpml progress url lowerLimit upperLimit limit =
+    let processOpml progress url lowerLimit upperLimit limit timeout =
         let masterList, blogs =
             opmlFileToTitleUlrs progress url limit
-            |> titleUlrsToWordCountMap progress
+            |> titleUlrsToWordCountMap progress timeout
         let clusterTree, chosen =
-            Seq.filter (fun { Wordcount = wc } -> not (Map.is_empty wc)) blogs
+            Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
+            //|> (fun blogs -> Set.to_seq (Set.of_seq blogs))
             |> clusterWordCounts progress lowerLimit upperLimit masterList
         { BiculsterTree = clusterTree; MasterWordList = masterList;
-          ChosenWords = chosen; ProcessedBlogs = Seq.length blogs}
+          ChosenWords = chosen; ProcessedBlogs = Seq.length blogs }
