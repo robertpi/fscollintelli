@@ -50,6 +50,7 @@ module Distributions =
         
         let len = float (Seq.length wc1)
         let num = pSum - ((sum1 * sum2) / len)
-        let den = sqrt (((sumSq1 - (sum1 * sum1)) / len) * ((sumSq2 - (sum2 * sum2)) / len))
-        if den = 0. then 0. else 1. - (num/den)
+        let den = sqrt (((sumSq1 - (sum1 * sum1)) / len) 
+                        * ((sumSq2 - (sum2 * sum2)) / len))
+        if den = 0. then 0. else 1. - (num / den)
 

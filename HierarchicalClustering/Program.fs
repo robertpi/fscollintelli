@@ -89,18 +89,7 @@ let rec drawTree (parent: ItemCollection) node =
     | Leaf { Name = name } -> 
         item.Header <- name
 
-let showResult result =
-    drawTree treeView.Items result.BiculsterTree
-    let total = float result.MasterWordList.Count
-    processWords (Map.to_seq result.MasterWordList)
-    |> Seq.iter (fun (word, count) ->  masterWordList.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
-    let chosenWords = Seq.map (fun word -> word, result.MasterWordList.[word]) result.ChosenWords
-    chosenWords
-    |> Seq.iter (fun (word, count) ->  choosenWordsAlph.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
-    processWords chosenWords
-    |> Seq.iter (fun (word, count) ->  choosenWords.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
-    enable true
-    progress (Printf.sprintf "Done - Processed: %i in %O" result.ProcessedBlogs stopwatch.Elapsed)
+    
 let start() =
     enable false
     let bgwkr = new BackgroundWorker()
@@ -113,6 +102,20 @@ let start() =
     bgwkr.DoWork.Add(fun ea ->
         stopwatch.Start()
         ea.Result <- Algorithm.processOpml progress url lowerBounds upperBounds limit timeout)
+
+    let showResult result =
+        drawTree treeView.Items result.BiculsterTree
+        let total = float result.MasterWordList.Count
+        processWords (Map.to_seq result.MasterWordList)
+        |> Seq.iter (fun (word, count) ->  masterWordList.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
+        let chosenWords = Seq.map (fun word -> word, result.MasterWordList.[word]) result.ChosenWords
+        chosenWords
+        |> Seq.iter (fun (word, count) ->  choosenWordsAlph.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
+        processWords chosenWords
+        |> Seq.iter (fun (word, count) ->  choosenWords.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
+        enable true
+        progress (Printf.sprintf "Done - Processed: %i in %O" result.ProcessedBlogs stopwatch.Elapsed)
+        
     bgwkr.RunWorkerCompleted.Add(fun ea ->
         statusBar.Text <- "Updating UI ..."
         stopwatch.Stop()
