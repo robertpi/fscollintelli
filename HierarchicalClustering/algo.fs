@@ -127,7 +127,7 @@ module Algorithm =
         let keys m = Map.to_seq m |> PSeq.map snd
         let compareNodes { WordCount = c1 } { WordCount = c2 } =
             let wc1, wc2 = keys c1, keys c2
-            Distributions.pearson wc1 wc2
+            1. - abs (Correlations.pearson wc1 wc2)
         let initComparisons = 
             progress (Printf.sprintf "Building initial comparison set ...")
             let clusters = Set.to_seq (Set.of_seq clusters)

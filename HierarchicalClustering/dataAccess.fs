@@ -11,7 +11,6 @@ let getContents progress (url: string) action errRes =
   async { try
             progress (Printf.sprintf "url: %s" url)
             let req = WebRequest.Create(url)
-            req.Timeout <- 2000
             use! resp = req.GetResponseAsync()
             use stream = resp.GetResponseStream()
             return action progress stream
