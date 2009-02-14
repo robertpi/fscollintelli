@@ -76,7 +76,17 @@ module Algorithm =
 
     /// regualar expressions of processing the HTML    
     let stripHtml = new Regex("<[^>]+>", RegexOptions.Compiled)
-    let splitChars = new Regex(@"\&\#8217;|\&\#160;|\&\#039;|\&\#8216;|\&\#8220;|\&quot;|\&mdash;|\&lt;|\&pound;|\&mdash;|\s|\n|\.|,|\!|\?|“|”|""|…|\||\(|\)|\[|\]|\-|\#|\&|;|\+|\*", RegexOptions.Compiled)
+    let splitChars = new Regex(@"\s|\n|\.|,|\!|\?|“|”|""|…|\||\(|\)|\[|\]|\-|\#|\&|;|\+|\*|\s'|'\s", RegexOptions.Compiled)
+    let replaceList = [ "&#8217;", "'";
+                        "&#160;", "";
+                        "&#039;", "'";
+                        "&#8216;", "'";
+                        "&#8220;", "\"";
+                        "&#8230;", "";
+                        "&mdash;", "-";
+                        "&lt;", "";
+                        "&gt;", "";
+                        "&pound;", "£" ]
 
     /// action that turns an RSS stream into a map of word/count pairs
     let treatRss title url (receiver: ReceiveBlogAgent) progress (stream: Stream) =
@@ -84,6 +94,7 @@ module Algorithm =
         let xdoc = new XPathDocument(stream)
         let treatText (html: string) =
             let text = stripHtml.Replace(html, "")
+            let text = replaceList |> Seq.fold (fun (acc: string) (token, replacer) -> acc.Replace(token,replacer)) text
             let words = splitChars.Split(text)
             seq { for word in words do
                     if word <> "" then yield word.ToLower() }
