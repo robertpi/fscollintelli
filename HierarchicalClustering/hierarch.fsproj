@@ -32,11 +32,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="extensions.fs" />
+    <Compile Include="clustering.fs" />
     <Compile Include="dataAccess.fs" />
     <Compile Include="algo.fs" />
+    <Compile Include="gdata.fs" />
     <Compile Include="Program.fs" />
     <None Include="Window1.xaml" />
     <None Include="tests.fsx" />
+    <Compile Include="dendrogram.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">

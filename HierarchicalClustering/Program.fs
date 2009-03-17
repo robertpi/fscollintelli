@@ -65,7 +65,7 @@ let nodeSelectChanged node =
     outputDetail.Text <- ""
     allWords.Text <- ""
     usedWords.Text <- ""
-    let wc = processWords (Map.to_seq node.WordCount)
+    let wc = processWords (Map.to_seq node.NameValueParis)
     wc |> Seq.iter (fun (word, count) ->  usedWords.AppendText(Printf.sprintf "%s: %f\n" word count))
     match node.NodeDetails with
     | Leaf { Name = name; Url = url; OriginalWordCount = wordmap } ->
@@ -101,7 +101,7 @@ let start() =
     let stopwatch = new Stopwatch()
     bgwkr.DoWork.Add(fun ea ->
         stopwatch.Start()
-        ea.Result <- Algorithm.processOpml progress url lowerBounds upperBounds limit timeout)
+        ea.Result <- BlogTreatment.processOpml progress url lowerBounds upperBounds limit timeout)
 
     let showResult result =
         drawTree treeView.Items result.BiculsterTree
@@ -130,7 +130,7 @@ let main() =
     treeView.SelectedItemChanged.Add(fun ea -> 
         if ea.NewValue <> null then
             let tvi = ea.NewValue :?> TreeViewItem
-            nodeSelectChanged (tvi.Tag :?> BiculsterNode))
+            nodeSelectChanged (tvi.Tag :?> BiculsterNode<BlogLeafDetails>))
     startButton.Click.Add(fun _ -> start())
     
     let app = new Application() in 
