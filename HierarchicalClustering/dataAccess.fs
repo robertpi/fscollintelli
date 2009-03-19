@@ -53,14 +53,3 @@ let getGoogleSpreadSheet progress (url: string) columnNames =
           let xdoc = new XPathDocument(stream)
           let titles = queryGoogleSpreadSheet xdoc "/at:feed/at:entry" columnNames
           return titles }
-            
-let columnNames =
-    [ "gsx:location";
-      "gsx:hospitalbedsper10000population";
-      "gsx:numberofdoctors";
-      "gsx:numberofdentistrypersonnel";
-      "gsx:numberofnursingandmidwiferypersonnel";
-      "gsx:nursingandmidwiferypersonneldensityper10000population" ]
-
-let getGoogleSpreadSheet' url columnNames = 
-    Async.Run (getGoogleSpreadSheet (fun _ -> ()) url columnNames)

@@ -65,23 +65,26 @@ let urlInfos =
 let data = Gdata.processData progress makeUrl urlInfos
 let tree = Clustering.buildClusterTree progress data
 let control = new Dendrogram(tree.NodeDetails)
-
 let window = new System.Windows.Window(Content = control)
-window.Show()
 
-let data' = Clustering.reverseMatrix data
+let data' = Gdata.reverseMatrix data
 let tree' = Clustering.buildClusterTree progress data'
 let control' = new Dendrogram(tree'.NodeDetails)
-
 let window' = new System.Windows.Window(Content = control')
 
 let main() =
 #if COMPILED
     let app = new System.Windows.Application()
-    app.Run() |> ignore
-#endif
+    app.Run(window) |> ignore
+    app.Run(window') |> ignore
+#else
     window.Show()
     window'.Show()
+#endif
+
+#if INERACTIVE
+UIHelpers.savePNG "reversed.png" control'
+#endif
 
 [<STAThread>]
 do main()

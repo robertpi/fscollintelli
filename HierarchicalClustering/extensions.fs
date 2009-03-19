@@ -53,7 +53,7 @@ module Correlations =
                         * (sumSq2 - (sum2 * sum2) / len))
         if den = 0. then 0. else num / den
 
-module UIHelps =
+module UIHelpers =
     open System.Windows.Media.Imaging
     open System.Windows
     open System.IO

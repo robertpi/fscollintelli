@@ -38,7 +38,7 @@ let processData progress makeUrls urls =
           NameValuesList = allValues }
     Seq.map creatMasterLocation countries
     |> Seq.filter (fun { NameValuesList = vals } -> not (Seq.exists (fun (_, value) -> Option.is_none value) vals))
-    //|> Seq.take 10
+    //|> Seq.take 10 // uncomment to work with a smaller set and spead things up
     |> Seq.map (fun loc ->
         let counts = Seq.map (fun (name,value) -> name, Option.get value) loc.NameValuesList
         { NameValueParis = Map.of_seq counts; NodeDetails = Leaf loc.Country; })
