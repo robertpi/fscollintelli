@@ -1,5 +1,6 @@
 ﻿#light
 
+#if INTERACTIVE
 #r "PresentationCore";;
 #r "PresentationFramework";;
 #r "System.Core";;
@@ -13,31 +14,13 @@
 #load "gdata.fs";;
 #load "algo.fs";;
 #load "dendrogram.fs";;
+#endif
 
+open System
 open Strangelights.Extensions
 open Strangelights.HierarchicalClustering
 
-// how to report progress
 let progress = printfn "%s"
-
-// input / parameters
-let url = "http://www.currybet.net/download/opml/top100ukblogs.xml"
-let limit = 20
-let timeout = 30000
-let lowerLimit = 0.003
-let upperLimit = 0.2
-
-// get the URLs and titles from the "OPML" file
-let urls = Async.Run(DataAccess.getContents progress url BlogTreatment.treatOpml (Seq.of_list []))
-let urls' = Seq.take limit urls
-
-// download the URLs 
-let masterList, blogs = BlogTreatment.titleUlrsToWordCountMap progress timeout urls'
-
-let clusterTree, chosen =
-    Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
-    |> BlogTreatment.clusterWordCounts progress lowerLimit upperLimit masterList
-
 
 let makeUrl = Printf.sprintf "http://spreadsheets.google.com/feeds/list/%s/od6/public/values"
 let urlInfos =
@@ -86,44 +69,19 @@ let control = new Dendrogram(tree.NodeDetails)
 let window = new System.Windows.Window(Content = control)
 window.Show()
 
-let data' = reverseMatrix data
+let data' = Clustering.reverseMatrix data
 let tree' = Clustering.buildClusterTree progress data'
 let control' = new Dendrogram(tree'.NodeDetails)
 
 let window' = new System.Windows.Window(Content = control')
-window'.Show()
 
-open System.Windows.Media.Imaging
-open System.Windows
-open System.IO
-open System.Windows.Media
+let main() =
+#if COMPILED
+    let app = new System.Windows.Application()
+    app.Run() |> ignore
+#endif
+    window.Show()
+    window'.Show()
 
-let savePNG path (window: System.Windows.FrameworkElement) =
-    // Get the size of canvas
-    let size = new Size(window.ActualWidth, window.ActualHeight)
-    printfn "%A %A" (window.Width, window.Height) size
-    // Measure and arrange the surface
-    // VERY IMPORTANT
-    window.Measure(size)
-    window.Arrange(new Rect(size))
-
-    // Create a render bitmap and push the surface to it
-    let renderBitmap = 
-        new RenderTargetBitmap(
-          int size.Width, 
-          int size.Height, 
-          96., 
-          96., 
-          PixelFormats.Pbgra32)
-    renderBitmap.Render(window)
-
-    // Create a file stream for saving image
-    use outStream = new FileStream(path, FileMode.Create)
-    // Use png encoder for our data
-    let encoder = new PngBitmapEncoder()
-    // push the rendered bitmap to it
-    encoder.Frames.Add(BitmapFrame.Create(renderBitmap))
-    // save the data to the stream
-    encoder.Save(outStream)
-    
-savePNG "alldata.png" control
+[<STAThread>]
+do main()

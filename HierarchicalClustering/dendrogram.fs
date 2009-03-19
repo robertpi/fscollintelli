@@ -4,7 +4,7 @@ open System
 open System.Globalization
 open System.Windows
 open System.Windows.Media
-
+open Strangelights.HierarchicalClustering
 
 type Dendrogram(t) =
     inherit FrameworkElement()
@@ -22,53 +22,41 @@ type Dendrogram(t) =
                     (getDepthInner r.NodeDetails d + 1.0)
             | Leaf x -> d
         getDepthInner t 0.0
-    let raise2ToPower (x : float) =
-        Math.Pow(2.0, Convert.ToDouble(x))
+    let pen = new Pen(Brushes.Black, 1.0)
+    let height = getHeight t * 20.
+    let width = 600.
+    let depth = getDepth t
+    
+    let scaling = width - 150. / depth 
+    
+    do base.Height <- height
+    //do base.Width <- width
+
     override x.OnRender(dc: DrawingContext) =
-        let height = getHeight t * 20.
-        let width = 1200.
-        let depth = getDepth t
-        
-        let scaling = width - 150. / depth 
         
         let rec drawNode t x y =
-            let h1 = (getHeight t.Left.NodeDetails) * 20.
-            let h2 = (getHeight t.Right.NodeDetails) * 20.
-            let top = y - (h1 + h2) / 2.
-            let bottom = y + (h1 + h2) / 2.
-            
-            let ll = t.Distance * scaling
-            ()
-        // constants that relate to the size and position
-        // of the tree
-        let center = base.Width / 2.0
-        let maxWidth = 32.0 * raise2ToPower (getDepth t)
-        // function for drawing a leaf node
-        let drawLeaf (x : float) (y : float) v =
-            let text = new FormattedText(v, CultureInfo.GetCultureInfo("en-us"),
-                                         FlowDirection.LeftToRight,
-                                         new Typeface("Verdana"),
-                                         8., Brushes.Black)
-            dc.DrawText(text, new Point(x, y))
-        let pen = new Pen(Brushes.Black, 1.0)
-        // draw a connector between the nodes when necessary
-        let connectNodes x y p =
-            match p with
-            | Some(px, py) -> dc.DrawLine(pen, new Point(px, py), new Point(x, y))
-            | None -> ()
-        // the main function to walk the tree structure drawing the
-        // nodes as we go
-        let rec drawTreeInner t d w p =
-            let x = center - (maxWidth * w)
-            let y = d * 32.0
-            connectNodes x y p
             match t with
-            | Node { Left = l; Right = r } ->
-                dc.DrawEllipse(Brushes.Black, pen, new Point(x - 3.0, y - 3.0), 7.0, 7.0)
-                let d = (d + 1.0)
-                drawTreeInner l.NodeDetails d (w + (1.0 / d)) (Some(x, y))
-                drawTreeInner r.NodeDetails d (w - (1.0 / d)) (Some(x, y))
-            | Leaf v -> drawLeaf x y v
-        drawTreeInner t 0.0 0.0 None
+            | Node t ->
+                let h1 = (getHeight t.Left.NodeDetails) * 20.
+                let h2 = (getHeight t.Right.NodeDetails) * 20.
+                let top = y - (h1 + h2) / 2.
+                let bottom = y + (h1 + h2) / 2.
+                
+                let ll = t.Distance * scaling
+                dc.DrawLine(pen, new Point(x, top + h1 / 2.), new Point(x, bottom - h2 / 2.))
 
+                // horizontal line
+                dc.DrawLine(pen, new Point(x, top + h1 / 2.), new Point(x + ll, top + h1 / 2.))
+                
+                dc.DrawLine(pen, new Point(x, bottom - h2 / 2.), new Point(x + ll, bottom - h2 / 2.))
+                
+                drawNode t.Left.NodeDetails (x + ll) (top + h1 / 2.)
+                drawNode t.Right.NodeDetails (x + ll) (bottom - h2 / 2.)
+           | Leaf v ->
+                let text = new FormattedText(v, CultureInfo.GetCultureInfo("en-us"),
+                                             FlowDirection.LeftToRight,
+                                             new Typeface("Verdana"),
+                                             10., Brushes.Black)
+                dc.DrawText(text, new Point(x + 5., y - 7.))
+        drawNode t 10. (height / 2.)
 

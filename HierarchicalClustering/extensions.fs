@@ -53,3 +53,36 @@ module Correlations =
                         * (sumSq2 - (sum2 * sum2) / len))
         if den = 0. then 0. else num / den
 
+module UIHelps =
+    open System.Windows.Media.Imaging
+    open System.Windows
+    open System.IO
+    open System.Windows.Media
+
+    let savePNG path (window: System.Windows.FrameworkElement) =
+        // Get the size of canvas
+        let size = new Size(window.ActualWidth, window.ActualHeight)
+        printfn "%A %A" (window.Width, window.Height) size
+        // Measure and arrange the surface
+        // VERY IMPORTANT
+        window.Measure(size)
+        window.Arrange(new Rect(size))
+
+        // Create a render bitmap and push the surface to it
+        let renderBitmap = 
+            new RenderTargetBitmap(
+              int size.Width, 
+              int size.Height, 
+              96., 
+              96., 
+              PixelFormats.Pbgra32)
+        renderBitmap.Render(window)
+
+        // Create a file stream for saving image
+        use outStream = new FileStream(path, FileMode.Create)
+        // Use png encoder for our data
+        let encoder = new PngBitmapEncoder()
+        // push the rendered bitmap to it
+        encoder.Frames.Add(BitmapFrame.Create(renderBitmap))
+        // save the data to the stream
+        encoder.Save(outStream)
