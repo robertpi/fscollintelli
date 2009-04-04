@@ -1,10 +1,16 @@
 ﻿#light
-module Strangelights.HierarchicalClustering.DataAccess
+// Copyright (c) 2009 All Right Reserved, Robert Pickering
+//
+// This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
+// Contact Robert Pickering via: http://strangelights.com/
+
+module Strangelights.DataTools.DataAccess.HttpXml
 open System
+open System.IO
 open System.Net
 open System.Xml
 open System.Xml.XPath
-open Strangelights.Extensions.Net
+open Strangelights.DataTools.Extensions
 
 /// builds a generic worflow that returns the result of action or a
 /// default result in the case of an error
@@ -12,8 +18,18 @@ let getContents progress (url: string) action errRes =
   async { try
             progress (Printf.sprintf "url: %s" url)
             let req = WebRequest.Create(url)
-            use! resp = req.GetResponseAsync()
+            use! resp = req.AsyncGetResponse()
             use stream = resp.GetResponseStream()
+            return action progress stream
+          with ex ->
+            progress (Printf.sprintf "%O" ex)
+            progress (Printf.sprintf "error for: %s" url)
+            return errRes }
+            
+let getContentsLocal progress (url: string) action errRes =
+  async { try
+            progress (Printf.sprintf "url: %s" url)
+            let stream = File.OpenRead(url)
             return action progress stream
           with _ ->
             progress (Printf.sprintf "error for: %s" url)
@@ -43,12 +59,12 @@ let queryGoogleSpreadSheet (xdoc: XPathDocument) xpath columnNames =
             let getValue nodename =
                 let node = x.SelectSingleNode(nodename, mngr)
                 node.Value
-            Seq.map getValue columnNames }
+            Seq.cmap getValue columnNames }
 
 let getGoogleSpreadSheet progress (url: string) columnNames =
   async { progress (Printf.sprintf "url: %s" url)
           let req = WebRequest.Create(url)
-          use! resp = req.GetResponseAsync()
+          use! resp = req.AsyncGetResponse()
           use stream = resp.GetResponseStream()
           let xdoc = new XPathDocument(stream)
           let titles = queryGoogleSpreadSheet xdoc "/at:feed/at:entry" columnNames
