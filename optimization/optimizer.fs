@@ -31,8 +31,10 @@ let random domain cost =
 let hillclimb domain cost =
     let len = Seq.length domain
     let rec loop best ccost =
-        let lowers = Seq.mapi (fun i (max, min) -> Seq.mapi (fun i' x -> if i = i' && x > min then x + 1. else x) best) domain
-        let heights = Seq.mapi (fun i (max, min) -> Seq.mapi (fun i' x -> if i = i' && x < max then x - 1. else x) best) domain
+        let generateNeigbours dir i (max, min) =
+            Seq.mapi (fun i' x -> if i = i' && x > min then x + dir else x) best
+        let lowers = Seq.mapi (generateNeigbours -1.) domain
+        let heights = Seq.mapi (generateNeigbours 1.) domain
         let findBest (best, ccost) sol =
             let cost = cost sol
             if cost < ccost then
