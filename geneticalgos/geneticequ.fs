@@ -4,7 +4,7 @@
 // This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
 // Contact Robert Pickering via: http://strangelights.com/
 
-namespace Strangelights.GenericAlgorithms
+namespace Strangelights.DataTools
 open System
 open Microsoft.FSharp.Math
 
@@ -119,8 +119,8 @@ module GenericExpressions =
         | x -> Nullary(x)
 
     type HoleTree =
-      | LeftHole of (Expression * Expression -> Expression) * HoleTree * Expression
-      | RightHole of (Expression * Expression -> Expression) * Expression * HoleTree
+      | LeftHole of (UntypedExpression * UntypedExpression -> UntypedExpression) * HoleTree * UntypedExpression
+      | RightHole of (UntypedExpression * UntypedExpression -> UntypedExpression) * UntypedExpression * HoleTree
       | Hole
 
     let rec plug = function

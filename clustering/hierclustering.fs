@@ -1,6 +1,11 @@
 ﻿#light
-namespace Strangelights.HierarchicalClustering
-open Strangelights.Extensions
+// Copyright (c) 2009 All Right Reserved, Robert Pickering
+//
+// This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
+// Contact Robert Pickering via: http://strangelights.com/
+
+namespace Strangelights.DataTools.Clustering
+open Strangelights.DataTools.Extensions
 
 type BiculsterNodeDetails<'a> =
     | Node of NodeDetails<'a>
@@ -18,17 +23,17 @@ and BiculsterNode<'a> =
 module Clustering =
     /// turns a list of cluster nodes into a hierarchal cluster tree
     let buildClusterTree progress clusters =
-        let keys m = Map.to_seq m |> PSeq.map snd
+        let keys m = Map.to_seq m |> Seq.cmap snd
         let compareNodes { NameValueParis = c1 } { NameValueParis = c2 } =
             let wc1, wc2 = keys c1, keys c2
-            1. - abs (Correlations.pearson wc1 wc2)
+            1. - abs (Measures.pearson wc1 wc2)
         let initComparisons = 
             progress (Printf.sprintf "Building initial comparison set ...")
             let clusters = Set.to_seq (Set.of_seq clusters)
-            let clusterParis = SeqenceOps.combinations2 clusters
+            let clusterParis = Seq.combinations2 clusters
             //Seq.iter (fun (x,y) -> if x = y then System.Windows.MessageBox.Show ("found pair " + (any_to_string x) + (any_to_string y)) |> ignore) toto
             clusterParis
-            |> PSeq.map (fun (c1, c2) -> compareNodes c1 c2, (c1, c2))
+            |> Seq.cmap (fun (c1, c2) -> compareNodes c1 c2, (c1, c2))
             |> Map.of_seq
         let averageWordMap wc1 wc2 =
             Seq.map2 (fun (word, v1) (_, v2) -> word, (v1 + v2) / 2.) (Map.to_list wc2) (Map.to_list wc1)
@@ -44,8 +49,8 @@ module Clustering =
                                               Right = c2;
                                               Distance = dist; } }
             let restClusters = Seq.filter (fun x -> not (x = c1 || x = c2)) clusters
-            let newComps = PSeq.map (fun c -> compareNodes node c, (node, c)) restClusters
-            let comparisons = PSeq.fold (fun acc (dist, comps) -> Map.add dist comps acc) restComps newComps
+            let newComps = Seq.cmap (fun c -> compareNodes node c, (node, c)) restClusters
+            let comparisons = Seq.fold (fun acc (dist, comps) -> Map.add dist comps acc) restComps newComps
             if Seq.length restClusters = 0 then
                 node
             else

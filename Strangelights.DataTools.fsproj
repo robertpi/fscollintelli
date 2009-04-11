@@ -31,14 +31,19 @@
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="misc/extensions.fs" />
-    <Compile Include="dataaccess/httpxml.fs" />
-    <Compile Include="dataaccess/gutenberg.fs" />
-    <Compile Include="clustering/hierclustering.fs" />
-    <Compile Include="clustering/multidscaling.fs" />
-    <Compile Include="treatment/blogs.fs" />
-    <Compile Include="treatment/gdata.fs" />
-    <Compile Include="presentation/tagcloud.fs" />
+    <Compile Include="misc\extensions.fs" />
+    <Compile Include="dataaccess\csvreader.fs" />
+    <Compile Include="dataaccess\httpxml.fs" />
+    <Compile Include="dataaccess\yfinance.fs" />
+    <Compile Include="dataaccess\gutenberg.fs" />
+    <Compile Include="optimization\optimizer.fs" />
+    <Compile Include="geneticalgos\geneticequ.fs" />
+    <Compile Include="clustering\hierclustering.fs" />
+    <Compile Include="clustering\multidscaling.fs" />
+    <Compile Include="treatment\blogs.fs" />
+    <Compile Include="treatment\gdata.fs" />
+    <Compile Include="presentation\dendrogram.fs" />
+    <Compile Include="presentation\tagcloud.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.PowerPack, Version=1.9.6.2, Culture=neutral, PublicKeyToken=a19089b1c74d0809">

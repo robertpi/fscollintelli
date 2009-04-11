@@ -1,7 +1,13 @@
 ﻿#light
+// Copyright (c) 2009 All Right Reserved, Robert Pickering
+//
+// This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
+// Contact Robert Pickering via: http://strangelights.com/
+
 open System
-open Strangelights.Extensions
-open Strangelights.HierarchicalClustering
+open Strangelights.DataTools.DataAccess
+open Strangelights.DataTools.Extensions
+open Strangelights.DataTools.Clustering
 
 type Location =
     { Country: string;
@@ -22,7 +28,7 @@ let getData progress makeUrl urls =
         async { let url = makeUrl key
                 let cols = Seq.map fst colNames
                 let names = Seq.skip 1 (Seq.map snd colNames)
-                let! data = DataAccess.getGoogleSpreadSheet progress url cols
+                let! data = HttpXml.getGoogleSpreadSheet progress url cols
                 return Seq.map (createLocation names) data  }
     Async.Run (Async.Parallel (List.map getData urls))
 

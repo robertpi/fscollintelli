@@ -1,6 +1,11 @@
 ﻿#light
+// Copyright (c) 2009 All Right Reserved, Robert Pickering
+//
+// This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
+// Contact Robert Pickering via: http://strangelights.com/
 
 open System
+open System.Globalization
 open System.Windows
 open System.Windows.Controls
 open System.Windows.Markup
@@ -11,8 +16,50 @@ open System.Windows.Threading
 open System.Threading
 open System.ComponentModel
 open System.Diagnostics
-open Strangelights.Extensions
-open Strangelights.HierarchicalClustering
+open Strangelights.DataTools.Extensions
+open Strangelights.DataTools.Treatment
+open Strangelights.DataTools.Clustering
+
+type MutliDScaling2DViewer(data) as x =
+    inherit FrameworkElement()
+    override x.OnRender(dc: DrawingContext) =
+        let width, height =  x.ActualWidth, x.ActualHeight
+        for { DataName = label; Location = loc } in data do
+            let x, y, color =
+                match loc with
+                | [ x; y ] -> x, y, None
+                | [ x; y; color ] -> x, y, Some color
+                | _ -> failwith (Printf.sprintf "unsupported dims: %i" (List.length loc))
+            let x, y = x * width, y * height
+            let brush = 
+                match color with
+                | None -> Brushes.Black
+                | Some x ->
+                    let red = byte (x * 255.)
+                    let blue = byte ((1. - x) * 255.)
+                    new SolidColorBrush(Color.FromRgb(red, byte 0, blue))
+            let text = new FormattedText(label, CultureInfo.GetCultureInfo("en-us"),
+                                         FlowDirection.LeftToRight,
+                                         new Typeface("Verdana"),
+                                         10., brush)
+            dc.DrawText(text, new Point(x + 5., y - 7.))
+
+//type MutliDScaling3DViewer(data) as x =
+//    inherit Viewport3D()
+//    do for { DataName = label; Location = loc } in data do
+//            let x, y, z =
+//                match loc with
+//                | [ x; y; z ] -> x, y, z
+//                | _ -> failwith (Printf.sprintf "unsupported dims: %i" (List.length loc))
+//            ()
+            //let x, y = x * width, y * height
+//            let P
+//            let text = new FormattedText(label, CultureInfo.GetCultureInfo("en-us"),
+//                                         FlowDirection.LeftToRight,
+//                                         new Typeface("Verdana"),
+//                                         10., Brushes.Black)
+//            dc.DrawText(text, new Point(x + 5., y - 7.))
+
     
 let processWords words =
     words
@@ -49,6 +96,9 @@ let statusBar = window.FindName("statusBar") :?> TextBox
 let currentPost = window.FindName("currentPost") :?> TabItem
 let currentUrl = window.FindName("currentUrl") :?> TextBox
 let postBrowser = window.FindName("postBrowser") :?> WebBrowser
+let tagCloudContainer = window.FindName("tagCloud") :?> TabItem
+let dendrogramContainer = window.FindName("dendrogram") :?> TabItem
+let multidscaleContainer = window.FindName("multidscale") :?> TabItem
 
 let progress s =
     statusBar.Dispatcher.Invoke(DispatcherPriority.Normal, new Invokee(fun _ -> statusBar.Text <- s)) |> ignore
@@ -94,6 +144,8 @@ let start() =
     enable false
     let bgwkr = new BackgroundWorker()
     let url, limit = opmlUrl.Text, Int32.Parse(urlLimit.Text)
+    let uri = new Uri(url)
+    let local = uri.IsFile
     let upperBounds = Double.Parse(upperBounds.Text) / 100. 
     let lowerBounds = Double.Parse(lowerBounds.Text) / 100. 
     let timeout = Int32.Parse(timeout.Text) * 1000
@@ -101,19 +153,44 @@ let start() =
     let stopwatch = new Stopwatch()
     bgwkr.DoWork.Add(fun ea ->
         stopwatch.Start()
-        ea.Result <- BlogTreatment.processOpml progress url lowerBounds upperBounds limit timeout)
+        ea.Result <- BlogTreatment.processOpmlAll progress local url lowerBounds upperBounds limit timeout)
 
     let showResult result =
         drawTree treeView.Items result.BiculsterTree
-        let total = float result.MasterWordList.Count
+        let total = Map.fold_left(fun total _ count -> total + count) 0. result.MasterWordList
         processWords (Map.to_seq result.MasterWordList)
         |> Seq.iter (fun (word, count) ->  masterWordList.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
-        let chosenWords = Seq.map (fun word -> word, result.MasterWordList.[word]) result.ChosenWords
+        let chosenWords = Seq.cmap (fun word -> word, result.MasterWordList.[word]) result.ChosenWords
         chosenWords
         |> Seq.iter (fun (word, count) ->  choosenWordsAlph.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
         processWords chosenWords
         |> Seq.iter (fun (word, count) ->  choosenWords.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
+
+        let rec accNodes acc node =
+            match node.NodeDetails with
+            | Node { Left = left; Right = right; Distance = dist } ->
+                let acc = accNodes acc left
+                accNodes acc right
+            | Leaf node -> node :: acc
+        
+        let tagCloud = new TagCloud(chosenWords, accNodes [] result.BiculsterTree)
+        tagCloud.BlogClicked.Add(fun { Name = name; Url = url } ->
+            currentUrl.Text <- url
+            postBrowser.Navigate(new Uri(url))
+            currentPost.IsSelected <- true)
+        tagCloudContainer.Content <- tagCloud
+
+        let rec mapNodes node =
+            match node.NodeDetails with
+            | Leaf { Name = name } -> { NodeDetails = Leaf name; NameValueParis = node.NameValueParis }
+            | Node { Left = left; Right = right; Distance = dist } ->
+                { NodeDetails = Node { Distance = dist; Left = mapNodes left; Right = mapNodes right; }
+                  NameValueParis = node.NameValueParis }
+        let node = mapNodes result.BiculsterTree
+        dendrogramContainer.Content <- new Dendrogram(node.NodeDetails)
+        multidscaleContainer.Content <- new MutliDScaling2DViewer(result.MulitDScaling)
         enable true
+
         progress (Printf.sprintf "Done - Processed: %i in %O" result.ProcessedBlogs stopwatch.Elapsed)
         
     bgwkr.RunWorkerCompleted.Add(fun ea ->
@@ -132,7 +209,6 @@ let main() =
             let tvi = ea.NewValue :?> TreeViewItem
             nodeSelectChanged (tvi.Tag :?> BiculsterNode<BlogLeafDetails>))
     startButton.Click.Add(fun _ -> start())
-    
     let app = new Application() in 
     app.Run(window) |> ignore
  

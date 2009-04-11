@@ -1,4 +1,8 @@
 ﻿#light
+// Copyright (c) 2009 All Right Reserved, Robert Pickering
+//
+// This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
+// Contact Robert Pickering via: http://strangelights.com/
 
 #if INTERACTIVE
 #r "PresentationCore";;
@@ -17,8 +21,9 @@
 #endif
 
 open System
-open Strangelights.Extensions
-open Strangelights.HierarchicalClustering
+open Strangelights.DataTools
+open Strangelights.DataTools.Extensions
+open Strangelights.DataTools.Clustering
 
 let progress = printfn "%s"
 

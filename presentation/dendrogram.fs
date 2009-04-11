@@ -1,10 +1,15 @@
 #light
-namespace Strangelights.HierarchicalClustering
+// Copyright (c) 2009 All Right Reserved, Robert Pickering
+//
+// This source is subject to the GLPv2, Please see the Strangelights.DataTools.gpl-2.0.txt.
+// Contact Robert Pickering via: http://strangelights.com/
+
+namespace Strangelights.DataTools.Clustering
 open System
 open System.Globalization
 open System.Windows
 open System.Windows.Media
-open Strangelights.HierarchicalClustering
+open Strangelights.DataTools.Clustering
 
 type Dendrogram(t) =
     inherit FrameworkElement()

@@ -1,13 +1,19 @@
 ﻿#light
-namespace Strangelights.HierarchicalClustering
+// Copyright (c) 2009 All Right Reserved, Robert Pickering
+//
+// This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
+// Contact Robert Pickering via: http://strangelights.com/
+
+namespace Strangelights.DataTools.Treatment
 open System
 open System.Net
 open System.IO
 open System.Xml.XPath
 open System.Text.RegularExpressions
 open System.Xml
-open Strangelights.Extensions
-open Strangelights.HierarchicalClustering
+open Strangelights.DataTools.DataAccess
+open Strangelights.DataTools.Extensions
+open Strangelights.DataTools.Clustering
 
 type Blog = 
     { Title: string;
@@ -46,6 +52,7 @@ type BlogLeafDetails =
       
 type Result = 
     { BiculsterTree: BiculsterNode<BlogLeafDetails>;
+      MulitDScaling: seq<MultiDResult>;
       MasterWordList: Map<string, float>;
       ChosenWords: seq<string>;
       ProcessedBlogs: int }
@@ -55,8 +62,8 @@ module BlogTreatment =
     /// pairs of titles and URL
     let treatOpml progress (stream: Stream) =
         let xdoc = new XPathDocument(stream)
-        let titles = DataAccess.queryXdoc xdoc "opml/body/outline/outline/@title"
-        let urls = DataAccess.queryXdoc xdoc "opml/body/outline/outline/@xmlUrl" 
+        let titles = HttpXml.queryXdoc xdoc "opml/body/outline/outline/@title"
+        let urls = HttpXml.queryXdoc xdoc "opml/body/outline/outline/@xmlUrl" 
         progress (Printf.sprintf "urls: %i" (Seq.length urls))
         progress (Printf.sprintf "titles: %i" (Seq.length titles))
         Seq.zip titles urls 
@@ -92,10 +99,10 @@ module BlogTreatment =
             else
                 Map.add word 1. acc
         let treatPostList posts =
-            let words = Seq.concat (Seq.map (fun post -> treatText post) posts)
-            PSeq.fold countWords Map.empty words
+            let words = Seq.concat (Seq.cmap (fun post -> treatText post) posts)
+            Seq.fold countWords Map.empty words
                 
-        let posts = DataAccess.queryXdoc xdoc "rss/channel/item/description"
+        let posts = HttpXml.queryXdoc xdoc "rss/channel/item/description"
         progress (Printf.sprintf "items: %i" (Seq.length posts))
         let wordMap = treatPostList posts
         let blog = { Title = title; Url = url; BlogWordCount = wordMap }
@@ -104,17 +111,20 @@ module BlogTreatment =
 
     /// download opml stream then turn into title/url paris
     let opmlFileToTitleUlrs progress url limit = 
-        let urlsWorkflow = DataAccess.getContents progress url treatOpml (Seq.of_list [])
+        let urlsWorkflow = HttpXml.getContents progress url treatOpml (Seq.of_list [])
         let urls = Async.Run urlsWorkflow
         Seq.take (min limit (Seq.length urls)) urls
 
     /// download rss files and turn into word/count maps     
-    let titleUlrsToWordCountMap progress timeout urls = 
+    let titleUlrsToWordCountMap local progress timeout urls = 
         let receiver = new ReceiveBlogAgent()
         let flows = 
             urls 
-            |> Seq.map (fun (title, url) -> 
-                DataAccess.getContents progress url (treatRss title url receiver) ())
+            |> Seq.cmap (fun (title, url) ->
+                if local then
+                    HttpXml.getContents progress url (treatRss title url receiver) ()
+                else
+                    HttpXml.getContentsLocal progress url (treatRss title url receiver) ())
         try
             Async.Run (Async.Parallel flows, timeout = timeout) |> ignore
         with :? TimeoutException -> progress "Request timed out"
@@ -126,7 +136,7 @@ module BlogTreatment =
     let clusterWordCounts progress lowerBound upperBound masterList blogs =
         // remove words that are uncommon or too common
         let remove (wordCount: Map<_, _>) =
-            let count = (float wordCount.Count)
+            let count = Map.fold_left(fun total _ count -> total + count) 0. wordCount
             wordCount |> Map.filter (fun word wc -> 
                 let frac = wc / count
                 //printfn "%s: %i / %i = %f" word wc count frac
@@ -137,12 +147,12 @@ module BlogTreatment =
             masterList
             |> remove
             |> Map.to_seq
-            |> Seq.map fst
+            |> Seq.cmap fst
         
         // ensure wordcount only contains words from master list    
         let addjustToMasterList wordCount =
             masterWordList 
-            |> Seq.map (fun word -> 
+            |> Seq.cmap (fun word -> 
                 match Map.tryfind word wordCount with
                 | Some count -> word, count
                 | None -> word, 0.)
@@ -152,22 +162,51 @@ module BlogTreatment =
         let clustersList =
             blogs
             |> Seq.sort_by (fun { Title = title } -> title)
-            |> PSeq.map (fun { Title = title; Url = url; BlogWordCount = wordmap } ->
+            |> Seq.cmap (fun { Title = title; Url = url; BlogWordCount = wordmap } ->
                     { NameValueParis = addjustToMasterList wordmap;
                       NodeDetails = Leaf { Name = title;
                                            Url = url;
                                            OriginalWordCount = wordmap; }; })
+            |> Seq.cache
 
-        Clustering.buildClusterTree progress clustersList, masterWordList
+        clustersList, masterWordList
 
-    /// process a word count into a hierarical cluster.
-    let processOpml progress url lowerLimit upperLimit limit timeout =
+    let processOpmlToInitClusters progress local url lowerLimit upperLimit limit timeout =
         let masterList, blogs =
-            opmlFileToTitleUlrs progress url limit
-            |> titleUlrsToWordCountMap progress timeout
-        let clusterTree, chosen =
+            if local then
+                Directory.GetFiles(url)
+                |> Seq.cmap (fun path -> Path.GetFileNameWithoutExtension(path), path)
+                |> Seq.take limit
+                |> titleUlrsToWordCountMap local progress timeout
+            else
+                opmlFileToTitleUlrs progress url limit
+                |> titleUlrsToWordCountMap local progress timeout
+        let clustersList, chosen =
             Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
             //|> (fun blogs -> Set.to_seq (Set.of_seq blogs))
             |> clusterWordCounts progress lowerLimit upperLimit masterList
-        { BiculsterTree = clusterTree; MasterWordList = masterList;
+        masterList, blogs, clustersList, chosen
+
+    let mdScaling progress clustersList =
+        let getName node =
+            match node with
+            | Leaf { Name = n } -> n
+            | Node _ -> ""
+        let namesVectors = 
+            Seq.cmap (fun { NameValueParis = wc; NodeDetails = nd } -> { DataName = getName nd; Vector = List.map snd (Map.to_list wc) }) clustersList
+            |> Seq.cache
+        MultiD.scaleDown progress 3 namesVectors 0.01
+
+    /// process a word count into a hierarical cluster.
+    let processOpmlAll progress local url lowerLimit upperLimit limit timeout =
+        let masterList, blogs, clustersList, chosen =
+            processOpmlToInitClusters progress local url lowerLimit upperLimit limit timeout
+        { BiculsterTree = Clustering.buildClusterTree progress clustersList; 
+          MulitDScaling = mdScaling progress clustersList;
+          MasterWordList = masterList;
           ChosenWords = chosen; ProcessedBlogs = Seq.length blogs }
+
+    let processOpmlToMdScaling progress local url lowerLimit upperLimit limit timeout =
+        let masterList, blogs, clustersList, chosen =
+            processOpmlToInitClusters progress local url lowerLimit upperLimit limit timeout
+        mdScaling progress clustersList
