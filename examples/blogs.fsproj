@@ -5,13 +5,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{9ef089b2-11fa-42fb-9db8-6a1412759bc6}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <RootNamespace>Strangelights.DataTools</RootNamespace>
-    <AssemblyName>Strangelights.DataTools</AssemblyName>
+    <ProjectGuid>{a3646504-7023-46e9-a34b-e5829afe958f}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>blogs2</RootNamespace>
+    <AssemblyName>blogs</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <Name>datatools</Name>
+    <Name>blogs2</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,32 +31,10 @@
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="misc\extensions.fs" />
-    <Compile Include="dataaccess\csvreader.fs" />
-    <Compile Include="dataaccess\httpxml.fs" />
-    <Compile Include="dataaccess\twitter.fs" />
-    <Compile Include="dataaccess\yfinance.fs" />
-    <Compile Include="dataaccess\gutenberg.fs" />
-    <Compile Include="optimization\optimizer.fs" />
-    <Compile Include="geneticalgos\geneticequ.fs" />
-    <Compile Include="clustering\hierclustering.fs" />
-    <Compile Include="clustering\multidscaling.fs" />
-    <Compile Include="treatment\blogs.fs" />
-    <Compile Include="treatment\gdata.fs" />
-    <Compile Include="presentation\dendrogram.fs" />
-    <Compile Include="presentation\tagcloud.fs" />
+    <Compile Include="blogsFrontEnd.fs" />
+    <None Include="Window1.xaml" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="FSharp.PowerPack, Version=1.9.6.2, Culture=neutral, PublicKeyToken=a19089b1c74d0809">
-      <Name>FSharp.PowerPack</Name>
-      <AssemblyName>FSharp.PowerPack.dll</AssemblyName>
-    </Reference>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.5.452, Culture=neutral, PublicKeyToken=1b03e6acf1164f73">
-      <Name>ICSharpCode.SharpZipLib</Name>
-      <AssemblyName>ICSharpCode.SharpZipLib.dll</AssemblyName>
-      <HintPath>ICSharpCode.SharpZipLib.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="PresentationCore, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <Name>PresentationCore</Name>
       <AssemblyName>PresentationCore.dll</AssemblyName>
@@ -69,10 +47,6 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
-    <Reference Include="System.Threading, Version=1.0.3058.34407, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
-      <Name>System.Threading</Name>
-      <AssemblyName>System.Threading.dll</AssemblyName>
-    </Reference>
     <Reference Include="System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
       <Name>System.Xml</Name>
       <AssemblyName>System.XML.dll</AssemblyName>
@@ -81,6 +55,11 @@
       <Name>WindowsBase</Name>
       <AssemblyName>WindowsBase.dll</AssemblyName>
     </Reference>
+    <ProjectReference Include="..\..\github\Strangelights.DataTools.fsproj">
+      <Name>Strangelights.DataTools</Name>
+      <Project>{9ef089b2-11fa-42fb-9db8-6a1412759bc6}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\FSharp\1.0\Microsoft.FSharp.Targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -90,4 +69,7 @@
 	<Target Name="AfterBuild">
 	</Target>
 	-->
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)\Window1.xaml" "$(TargetDir)"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
