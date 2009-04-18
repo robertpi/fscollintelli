@@ -4,7 +4,7 @@
 // This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
 // Contact Robert Pickering via: http://strangelights.com/
 
-module Strangelights.DataTools.DataAccess
+namespace Strangelights.DataTools.DataAccess
 open System
 open System.IO
 open System.Collections
