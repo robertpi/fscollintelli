@@ -34,7 +34,6 @@
     <Compile Include="misc\extensions.fs" />
     <Compile Include="dataaccess\csvreader.fs" />
     <Compile Include="dataaccess\httpxml.fs" />
-    <Compile Include="dataaccess\twitter.fs" />
     <Compile Include="dataaccess\yfinance.fs" />
     <Compile Include="dataaccess\gutenberg.fs" />
     <Compile Include="optimization\optimizer.fs" />
@@ -43,6 +42,7 @@
     <Compile Include="clustering\multidscaling.fs" />
     <Compile Include="treatment\blogs.fs" />
     <Compile Include="treatment\gdata.fs" />
+    <Compile Include="treatment\twitter.fs" />
     <Compile Include="presentation\dendrogram.fs" />
     <Compile Include="presentation\tagcloud.fs" />
   </ItemGroup>

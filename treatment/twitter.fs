@@ -11,7 +11,8 @@
 #r "PresentationFramework";;
 #r "WindowsBase";;
 #load "../misc/extensions.fs"
-#load "httpxml.fs"
+#load "../clustering/multidscaling.fs"
+#load "../dataaccess/httpxml.fs"
 #endif
 open System
 open System.IO
@@ -19,25 +20,41 @@ open System.Net
 open System.Text
 open System.Xml
 open System.Xml.XPath
+open System.Globalization
 open Strangelights.DataTools.DataAccess
+open Strangelights.DataTools.Clustering
 
-let postTweet username password tweet =
-    let user = Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":" + password))
-    // determine what we want to upload as a status
-    let bytes = Encoding.ASCII.GetBytes("status=" + tweet)
-    // connect with the update page
-    let request = WebRequest.Create("http://twitter.com/statuses/update.xml", 
-                                    Method = "POST",
-                                    ContentLength = Convert.ToInt64(bytes.Length),
-                                    ContentType = "application/x-www-form-urlencoded") :?> HttpWebRequest
-    request.ServicePoint.Expect100Continue <- false
-    // set the authorisation levels
-    request.Headers.Add("Authorization", "Basic " + user)
-   
-    // set up the stream
-    use reqStream = request.GetRequestStream()
-    reqStream.Write(bytes, 0, bytes.Length)
-    reqStream.Close()
+open System.Windows
+open System.Windows.Controls
+open System.Windows.Markup
+open System.Windows.Media
+open System.Windows.Media.Media3D
+
+type MutliDScaling2DViewer(data: List<MultiDResult>) as x =
+    inherit FrameworkElement()
+    override x.OnRender(dc: DrawingContext) =
+        let width, height =  x.ActualWidth, x.ActualHeight
+        for { DataName = label; Location = loc } in data do
+            let x, y, color =
+                match loc with
+                | [ x; y ] -> x, y, None
+                | [ x; y; color ] -> x, y, Some color
+                | _ -> failwith (Printf.sprintf "unsupported dims: %i" (List.length loc))
+            let x, y = x * width, y * height
+            let brush = 
+                match color with
+                | None -> Brushes.Black
+                | Some x ->
+                    let red = byte (x * 255.)
+                    let blue = byte ((1. - x) * 255.)
+                    new SolidColorBrush(Color.FromRgb(red, byte 0, blue))
+            let text = new FormattedText(label, CultureInfo.GetCultureInfo("en-us"),
+                                         FlowDirection.LeftToRight,
+                                         new Typeface("Verdana"),
+                                         10., brush)
+            dc.DrawText(text, new Point(x + 5., y - 7.))
+
+let progress = printfn "%s"
 
 type Tweeter =
     { Id: int;
@@ -47,30 +64,59 @@ type Tweeter =
 
 let treatTweeter name progress (stream: Stream) =
     let xdoc = new XPathDocument(stream)
-    let ids = HttpXml.queryXdoc xdoc "users/user/id"
-    let names = HttpXml.queryXdoc xdoc "users/user/name" 
-    let screenName = HttpXml.queryXdoc xdoc "users/user/screen_name" 
-    let imageUrl = HttpXml.queryXdoc xdoc "users/user/profile_image_url" 
-    let seq1 = Seq.zip ids names
-    let seq2 = Seq.zip screenName imageUrl
+    let nav = xdoc.CreateNavigator()
+    let xpath = nav.Compile("users/user")
+    let iter = nav.Select(xpath)
     name,
-    Seq.zip seq1 seq2
-    |> Seq.map (fun ((id, name), (sn, url)) -> 
-        { Id = Int32.Parse(id);
-          Name = name;
-          ScreenName = sn;
-          PictureUrl = url; })
+    seq { for x in iter -> 
+            let x  = x :?> XPathNavigator
+            let getValue (nodename: string) =
+                let node = x.SelectSingleNode(nodename)
+                node.Value
+            { Id = Int32.Parse(getValue "id");
+              Name = getValue "name";
+              ScreenName = getValue "screen_name";
+              PictureUrl = getValue "profile_image_url"; } }
+//    let ids = HttpXml.queryXdoc xdoc "users/user/id"
+//    let names = HttpXml.queryXdoc xdoc "users/user/name" 
+//    let screenName = HttpXml.queryXdoc xdoc "users/user/screen_name" 
+//    let imageUrl = HttpXml.queryXdoc xdoc "users/user/profile_image_url" 
+//    let seq1 = Seq.zip ids names
+//    let seq2 = Seq.zip screenName imageUrl
+//    name,
+//    Seq.zip seq1 seq2
+//    |> Seq.map (fun ((id, name), (sn, url)) -> 
+//        { Id = Int32.Parse(id);
+//          Name = name;
+//          ScreenName = sn;
+//          PictureUrl = url; })
 
 let friendsUrl = Printf.sprintf "http://twitter.com/statuses/friends/%s.xml"
 
 let getAllFriendsOfFriends name = 
     let url = friendsUrl name
     let name, friends = Async.Run (HttpXml.getContents (fun _ -> ()) url (treatTweeter name) ("", Seq.empty))
-    let friends = Seq.take 5 friends
-    let friendsOfFriends = Seq.map (fun { ScreenName = sn } -> HttpXml.getContents (fun _ -> ()) (friendsUrl sn) (treatTweeter sn) ("", Seq.empty)) friends
-    Async.Run (Async.Parallel friendsOfFriends)
+    let friendsScreenName = Seq.map (fun { ScreenName = sn } -> sn) friends
+    let friendsOfFriendsWorkflows = Seq.map (fun sn -> HttpXml.getContents (fun _ -> ()) (friendsUrl sn) (treatTweeter sn) ("", Seq.empty)) friendsScreenName
+    friendsScreenName, Async.Run (Async.Parallel friendsOfFriendsWorkflows)
+    
 
-getAllFriendsOfFriends "robertpi"
+let fof = 
+    let friendsScreenName, fof = getAllFriendsOfFriends "robertpi"
+    let input =
+        Seq.map (fun (name, friends) -> name, Seq.map (fun fsn  -> if Seq.exists (fun { ScreenName = sn }-> fsn = sn) friends then 1. else 0.) friendsScreenName) fof
+        |> Seq.map (fun (name, fvect) -> { DataName = name; Vector = fvect })
+    MultiD.scaleDown progress 2 input 0.01
+
+
+let viewer = MutliDScaling2DViewer(fof)
+
+let window = new Window(Content = viewer)
+
+let app = new Application()
+
+do app.Run(window) |> ignore
+
 
 //let getContents progress (url: string) username password (parameters: string) action errRes =
 //  async { try
