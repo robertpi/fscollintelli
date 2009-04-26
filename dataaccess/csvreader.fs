@@ -7,6 +7,7 @@
 namespace Strangelights.DataTools.DataAccess
 open System
 open System.IO
+open System.Globalization
 open System.Collections
 open System.Reflection
 open Microsoft.FSharp.Reflection
@@ -23,9 +24,22 @@ type CsvReader<'a>(s: Stream, ?skipRows: int, ?dateFormat: string) =
         | _ when t = typeof<DateTime> ->
             let parser =
                 match dateFormat with
-                | Some format -> fun s -> DateTime.ParseExact(s, format, null)
+                | Some format -> 
+                    fun s -> 
+                        try 
+                            DateTime.ParseExact(s, format, null)
+                        with _ ->
+                            printfn "Error parsing: %s" s 
+                            rethrow()
                 | None -> DateTime.Parse
             fun x -> parser x :> obj
+        | _ when t = typeof<float> ->
+                    fun s -> 
+                        try 
+                            Double.Parse(s, CultureInfo.InvariantCulture) :> obj
+                        with _ ->
+                            printfn "Error parsing: %s" s 
+                            rethrow()
         | _  ->
             let parse = t.GetMethod("Parse", BindingFlags.Static ||| BindingFlags.Public, null, [| typeof<string> |], null)
             fun (s: string) ->

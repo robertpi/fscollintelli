@@ -43,6 +43,7 @@
     <Compile Include="treatment\blogs.fs" />
     <Compile Include="treatment\gdata.fs" />
     <Compile Include="treatment\twitter.fs" />
+    <Compile Include="presentation\multidscaling2Dviewer.fs" />
     <Compile Include="presentation\dendrogram.fs" />
     <Compile Include="presentation\tagcloud.fs" />
   </ItemGroup>
@@ -72,6 +73,8 @@
     <Reference Include="System.Threading, Version=1.0.3058.34407, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <Name>System.Threading</Name>
       <AssemblyName>System.Threading.dll</AssemblyName>
+      <HintPath>System.Threading.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
       <Name>System.Xml</Name>

@@ -121,10 +121,11 @@ module BlogTreatment =
         let flows = 
             urls 
             |> Seq.cmap (fun (title, url) ->
-                if local then
-                    HttpXml.getContents progress url (treatRss title url receiver) ()
+                let uri = new Uri(url)
+                if uri.IsFile then
+                    HttpXml.getContentsLocal progress url (treatRss title url receiver) ()
                 else
-                    HttpXml.getContentsLocal progress url (treatRss title url receiver) ())
+                    HttpXml.getContents progress url (treatRss title url receiver) ())
         try
             Async.Run (Async.Parallel flows, timeout = timeout) |> ignore
         with :? TimeoutException -> progress "Request timed out"

@@ -25,6 +25,7 @@
 
 open Strangelights.DataTools.Extensions
 open Strangelights.DataTools.Clustering
+open Strangelights.DataTools.Treatment
 
 // how to report progress
 let progress = printfn "%s"
@@ -46,6 +47,12 @@ let masterList, blogs = BlogTreatment.titleUlrsToWordCountMap progress timeout u
 let clusterTree, chosen =
     Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
     |> BlogTreatment.clusterWordCounts progress lowerLimit upperLimit masterList
+
+let too = BlogTreatment.processOpmlToMdScaling progress false url lowerLimit upperLimit limit timeout
+let mds = new MutliDScaling2DViewer(List.of_seq too)
+
+let window = new Window(Content = mds)
+window.Show()
 
 open System.IO
 

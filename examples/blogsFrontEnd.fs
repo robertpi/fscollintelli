@@ -19,47 +19,7 @@ open System.Diagnostics
 open Strangelights.DataTools.Extensions
 open Strangelights.DataTools.Treatment
 open Strangelights.DataTools.Clustering
-
-type MutliDScaling2DViewer(data) as x =
-    inherit FrameworkElement()
-    override x.OnRender(dc: DrawingContext) =
-        let width, height =  x.ActualWidth, x.ActualHeight
-        for { DataName = label; Location = loc } in data do
-            let x, y, color =
-                match loc with
-                | [ x; y ] -> x, y, None
-                | [ x; y; color ] -> x, y, Some color
-                | _ -> failwith (Printf.sprintf "unsupported dims: %i" (List.length loc))
-            let x, y = x * width, y * height
-            let brush = 
-                match color with
-                | None -> Brushes.Black
-                | Some x ->
-                    let red = byte (x * 255.)
-                    let blue = byte ((1. - x) * 255.)
-                    new SolidColorBrush(Color.FromRgb(red, byte 0, blue))
-            let text = new FormattedText(label, CultureInfo.GetCultureInfo("en-us"),
-                                         FlowDirection.LeftToRight,
-                                         new Typeface("Verdana"),
-                                         10., brush)
-            dc.DrawText(text, new Point(x + 5., y - 7.))
-
-//type MutliDScaling3DViewer(data) as x =
-//    inherit Viewport3D()
-//    do for { DataName = label; Location = loc } in data do
-//            let x, y, z =
-//                match loc with
-//                | [ x; y; z ] -> x, y, z
-//                | _ -> failwith (Printf.sprintf "unsupported dims: %i" (List.length loc))
-//            ()
-            //let x, y = x * width, y * height
-//            let P
-//            let text = new FormattedText(label, CultureInfo.GetCultureInfo("en-us"),
-//                                         FlowDirection.LeftToRight,
-//                                         new Typeface("Verdana"),
-//                                         10., Brushes.Black)
-//            dc.DrawText(text, new Point(x + 5., y - 7.))
-
+open Strangelights.DataTools.UI
     
 let processWords words =
     words
@@ -146,9 +106,9 @@ let start() =
     let url, limit = opmlUrl.Text, Int32.Parse(urlLimit.Text)
     let uri = new Uri(url)
     let local = uri.IsFile
-    let upperBounds = Double.Parse(upperBounds.Text) / 100. 
-    let lowerBounds = Double.Parse(lowerBounds.Text) / 100. 
-    let timeout = Int32.Parse(timeout.Text) * 1000
+    let upperBounds = (float upperBounds.Text) / 100. 
+    let lowerBounds = (float lowerBounds.Text) / 100. 
+    let timeout = (int timeout.Text) * 1000
     treeView.Items.Clear()
     let stopwatch = new Stopwatch()
     bgwkr.DoWork.Add(fun ea ->
@@ -188,7 +148,7 @@ let start() =
                   NameValueParis = node.NameValueParis }
         let node = mapNodes result.BiculsterTree
         dendrogramContainer.Content <- new Dendrogram(node.NodeDetails)
-        multidscaleContainer.Content <- new MutliDScaling2DViewer(result.MulitDScaling)
+        multidscaleContainer.Content <- new MutliDScaling2DViewer(List.of_seq result.MulitDScaling)
         enable true
 
         progress (Printf.sprintf "Done - Processed: %i in %O" result.ProcessedBlogs stopwatch.Elapsed)

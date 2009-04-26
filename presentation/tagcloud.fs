@@ -4,7 +4,7 @@
 // This source is subject to the GLPv2, Please see the Strangelights.DataTools.gpl-2.0.txt.
 // Contact Robert Pickering via: http://strangelights.com/
 
-namespace Strangelights.DataTools.Clustering
+namespace Strangelights.DataTools.UI
 open System
 open System.Globalization
 open System.Windows
