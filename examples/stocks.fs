@@ -127,21 +127,28 @@ let getStocks desc =
     let dates = 
         Seq.map (fun (_,res) -> Set.of_seq (Seq.map (fun (d, _, _, _, _, _, _) -> d) res)) res
         |> Seq.reduce Set.intersect |> Set.to_seq
-    
+    let datePriceMap prices = Seq.map (fun (d, p, _, _, _, _, _) -> (any_to_string d), p) prices |> Map.of_seq
     res
     |> Seq.map (fun (name, prices) -> name, Seq.filter (fun (d, _, _, _, _, _, _) -> Seq.exists (fun d' -> d' = d) dates) prices)
     |> Seq.map (fun (name, prices) -> { DataName = name; Vector = Seq.map (fun (_, p, _, _, _, _, _) -> p) prices |> Seq.cache })
+    |> Seq.cache,
+    res
+    |> Seq.map (fun (name, prices) -> name, Seq.filter (fun (d, _, _, _, _, _, _) -> Seq.exists (fun d' -> d' = d) dates) prices)
+    |> Seq.map (fun (name, prices) -> { NodeDetails = Leaf name; NameValueParis = datePriceMap prices })
     |> Seq.cache
 
-let stocks = getStocks djia
+let stocks, stocks' = getStocks djia
 
-let scaleDownRes fofMatrix =
-    MultiD.scaleDown progress 2 fofMatrix 0.001
+//let scaleDownRes fofMatrix =
+//    MultiD.scaleDown progress 2 fofMatrix 0.001
 
-let res = scaleDownRes stocks
+//let res = scaleDownRes stocks
 
-let viewer = new MutliDScaling2DViewer(res)
-let tab1 = new TabItem(Content = viewer, Header = "Mutli-diminsional scaling") 
+let res' =  Clustering.buildClusterTree progress stocks'
+
+//let viewer = new MutliDScaling2DViewer(res)
+let viewer' = new Dendrogram(res'.NodeDetails)
+//let tab1 = new TabItem(Content = viewer, Header = "Mutli-diminsional scaling") 
 
 let nbl<'a when 'a:(new:unit->'a) and 'a: struct and 'a :> ValueType> x = new Nullable<'a>(x)
 
@@ -156,56 +163,44 @@ let dataSeries =
     Seq.map (fun { DataName = name; Vector = points } -> series name points) stocks
     |> Seq.cache
 
-let chart =
-    let chart = new Chart()
-    chart.Height <- 500.
-    chart.Titles.Add(new Title(Text = "Visifire Sample Chart"))
-    chart
+type ChartCheckbox(title) =
+    inherit DockPanel()
+    let chart =
+        let chart = new Chart()
+        chart.Height <- 500.
+        chart.Titles.Add(new Title(Text = title))
+        chart
 
-let listBox =
-    let listBox = new ListBox()
-    stocks |> Seq.iter (fun { DataName = name } -> 
-        let chkbx = new CheckBox(Content = name)
-        chkbx.Checked.Add(fun _ ->
-            let series = dataSeries |> Seq.find (fun x -> x.LegendText = name)
-            chart.Series.Add(series)
-            chart.InvalidateVisual())
-        chkbx.Unchecked.Add(fun _ ->
-            let series = dataSeries |> Seq.find (fun x -> x.LegendText = name)
-            chart.Series.Remove(series) |> ignore
-            chart.InvalidateVisual())
-        listBox.Items.Add(chkbx) |> ignore)
-    let scrollViewer = new ScrollViewer()
-    let grid = new Grid()
-    grid.Children.Add(listBox) |> ignore
-    scrollViewer.Content <- grid
-    scrollViewer.Height <- 100.
-    scrollViewer
-    
+    let listBox =
+        let listBox = new ListBox()
+        stocks |> Seq.iter (fun { DataName = name } -> 
+            let chkbx = new CheckBox(Content = name)
+            chkbx.Checked.Add(fun _ ->
+                let series = dataSeries |> Seq.find (fun x -> x.LegendText = name)
+                chart.Series.Add(series)
+                chart.InvalidateVisual())
+            chkbx.Unchecked.Add(fun _ ->
+                let series = dataSeries |> Seq.find (fun x -> x.LegendText = name)
+                chart.Series.Remove(series) |> ignore
+                chart.InvalidateVisual())
+            listBox.Items.Add(chkbx) |> ignore)
+        new ScrollViewer(Content = listBox)
 
+    do DockPanel.SetDock(chart, Dock.Top)
+    do base.Children.Add(chart) |> ignore
+    do DockPanel.SetDock(listBox, Dock.Bottom)
+    do base.Children.Add(listBox) |> ignore
 
-let stackPanel =
-    let docPanel = new DockPanel()
-    let stackPanel = new StackPanel()
-    stackPanel.Children.Add(chart) |> ignore
-    stackPanel.Children.Add(listBox) |> ignore
-    docPanel.Children.Add(stackPanel) |> ignore
-    docPanel
-
-let tab2 = new TabItem(Content = stackPanel, Header = "Charts") 
+let tab2 = new TabItem(Content = ChartCheckbox("My chart"), Header = "Charts") 
+let tab3 = new TabItem(Content = viewer', Header = "Dendogram") 
 
 let tabs = 
     let tabs = new TabControl()
-    tabs.Items.Add(tab1) |> ignore
+    tabs.Items.Add(tab3) |> ignore
     tabs.Items.Add(tab2) |> ignore
     tabs
 
-let window = 
-    let win = new Window(Content = tabs)
-//    let grid = new Grid()
-//    grid.Layou
-//    win.Lay
-    win
+let window = new Window(Content = tabs)
 
 let app = new Application()
 

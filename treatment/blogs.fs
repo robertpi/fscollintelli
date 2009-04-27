@@ -63,24 +63,129 @@ module BlogTreatment =
     let treatOpml progress (stream: Stream) =
         let xdoc = new XPathDocument(stream)
         let titles = HttpXml.queryXdoc xdoc "opml/body/outline/outline/@title"
-        let urls = HttpXml.queryXdoc xdoc "opml/body/outline/outline/@xmlUrl" 
+        let urls = HttpXml.queryXdoc xdoc "opml/body/outline/outline/@xmlUrl"
         progress (Printf.sprintf "urls: %i" (Seq.length urls))
         progress (Printf.sprintf "titles: %i" (Seq.length titles))
-        Seq.zip titles urls 
+        let titleUrls = Seq.zip titles urls 
+        Seq.iter (fun (t,url) -> printfn "%s: %s" t url) titleUrls
+        titleUrls
 
     /// regualar expressions of processing the HTML    
     let stripHtml = new Regex("<[^>]+>", RegexOptions.Compiled)
-    let splitChars = new Regex(@"\s|\n|\.|,|\!|\?|“|”|""|…|\||\(|\)|\[|\]|\-|\#|\&|;|\+|\*|\s'|'\s", RegexOptions.Compiled)
+    let splitChars = new Regex(@"\s|\n|\.|,|\!|\?|“|”|""|/|…|\||\(|\)|\[|\]|\-|\#|\&|;|\+|\*|\s'|'\s", RegexOptions.Compiled)
     let replaceList = [ "&#8217;", "'";
                         "&#160;", "";
                         "&#039;", "'";
                         "&#8216;", "'";
-                        "&#8220;", "\"";
+                        "&#8220;", "";
+                        "&#8221;", "";
+                        "&#8211;", "";
                         "&#8230;", "";
-                        "&mdash;", "-";
+                        "&mdash;", "";
                         "&lt;", "";
                         "&gt;", "";
                         "&pound;", "£" ]
+    let ignoreList = [  "nbsp"
+                        "the"
+                        "to"
+                        "a"
+                        "of"
+                        "and"
+                        "in"
+                        "that"
+                        "is"
+                        "for"
+                        "this"
+                        "you"
+                        "we"
+                        "it"
+                        "on"
+                        "are"
+                        "be"
+                        "with"
+                        "i"
+                        "can"
+                        "if"
+                        "an"
+                        "or"
+                        "as"
+                        "all"
+                        "have"
+                        "at"
+                        "but"
+                        "will"
+                        "from"
+                        "so"
+                        "some"
+                        "your"
+                        "by"
+                        "when"
+                        "more"
+                        "not"
+                        "one"
+                        "like"
+                        "which"
+                        "our"
+                        "other"
+                        "new"
+                        "has"
+                        "0"
+                        "1"
+                        "2"
+                        "3"
+                        "4"
+                        "5"
+                        "6"
+                        "7"
+                        "8"
+                        "9"
+                        "only"
+                        "these"
+                        "do"
+                        "what"
+                        "there"
+                        "would"
+                        "any"
+                        "they"
+                        "was"
+                        "now"
+                        "then"
+                        "into"
+                        "my"
+                        "using"
+                        "it’s"
+                        "should"
+                        "no"
+                        "must"
+                        "its"
+                        "were"
+                        "had"
+                        "about"
+                        "it's"
+                        "just"
+                        "me"
+                        "i'm"
+                        "i'll"
+                        "well"
+                        "you're"
+                        "very"
+                        "i'd"
+                        "how"
+                        "their"
+                        "am"
+                        "too"
+                        "his"
+                        "get"
+                        "also"
+                        "been"
+                        "while"
+                        "us"
+                        "who"
+                        "them"
+                        "he"
+                        "that's"
+                        "i’m"
+                        "you’re" ]
 
     /// action that turns an RSS stream into a map of word/count pairs
     let treatRss title url (receiver: ReceiveBlogAgent) progress (stream: Stream) =
@@ -110,10 +215,9 @@ module BlogTreatment =
 
 
     /// download opml stream then turn into title/url paris
-    let opmlFileToTitleUlrs progress url limit = 
+    let opmlFileToTitleUlrs progress url = 
         let urlsWorkflow = HttpXml.getContents progress url treatOpml (Seq.of_list [])
-        let urls = Async.Run urlsWorkflow
-        Seq.take (min limit (Seq.length urls)) urls
+        Async.Run urlsWorkflow
 
     /// download rss files and turn into word/count maps     
     let titleUlrsToWordCountMap local progress timeout urls = 
@@ -141,7 +245,7 @@ module BlogTreatment =
             wordCount |> Map.filter (fun word wc -> 
                 let frac = wc / count
                 //printfn "%s: %i / %i = %f" word wc count frac
-                lowerBound < frac && frac < upperBound)
+                lowerBound < frac && not (List.mem word ignoreList))
 
         // build a master word list containing all the words we interested in
         let masterWordList =
@@ -173,15 +277,19 @@ module BlogTreatment =
         clustersList, masterWordList
 
     let processOpmlToInitClusters progress local url lowerLimit upperLimit limit timeout =
-        let masterList, blogs =
+        let opml =
             if local then
-                Directory.GetFiles(url)
-                |> Seq.cmap (fun path -> Path.GetFileNameWithoutExtension(path), path)
-                |> Seq.take limit
-                |> titleUlrsToWordCountMap local progress timeout
+                if File.Exists url then
+                    treatOpml progress (File.OpenRead url)
+                elif Directory.Exists url then
+                    Directory.GetFiles url
+                    |> Seq.cmap (fun path -> Path.GetFileNameWithoutExtension(path), path) :> seq<_>
+                else
+                    failwith "couldn't find file/directory"
             else
-                opmlFileToTitleUlrs progress url limit
-                |> titleUlrsToWordCountMap local progress timeout
+                opmlFileToTitleUlrs progress url
+        let opml = Seq.take (min (Seq.length opml) limit) opml
+        let masterList, blogs = titleUlrsToWordCountMap local progress timeout opml
         let clustersList, chosen =
             Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
             //|> (fun blogs -> Set.to_seq (Set.of_seq blogs))

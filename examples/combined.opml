@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<opml version="1.0">
+  <head>
+    <title>Feed Subscriptions</title>
+  </head>
+  <body>
+    <outline>
+      <outline title="Adam Nathan" text="Adam Nathan" description="Discussing migration to Managed Code, Indigo, and Avalon" xmlUrl="http://blogs.msdn.com/adam_nathan/Rss.aspx" htmlUrl="http://blogs.msdn.com/adam_nathan/default.aspx" type="rss" />
+      <outline title="Brad Abrams" text="Brad Abrams" description="Design Guidelines, Managed code and WinFX" xmlUrl="http://blogs.msdn.com/brada/Rss.aspx" htmlUrl="http://blogs.msdn.com/brada/default.aspx" type="rss" />
+      <outline title="Chris Brumme" text="Chris Brumme" description="&lt;i&gt;C++ articles, code snippets, musings, etc. from Andy Rich&lt;/i&gt;&lt;br&gt;If this is your first time here, you may want to check out my &lt;a color=&quot;#FFFFFF&quot; href=&quot;http://blogs.msdn.com/arich/archive/2003/11/06/56812.aspx&quot;&gt;blog introduction&lt;/a&gt;." xmlUrl="http://blogs.msdn.com/cbrumme/Rss.aspx" htmlUrl="http://blogs.msdn.com/cbrumme/default.aspx" type="rss" />
+      <outline title="Dan Fernandez" text="Dan Fernandez" description="Visual C# Product Manager" xmlUrl="http://blogs.msdn.com/danielfe/rss.aspx" htmlUrl="http://blogs.msdn.com/danielfe/default.aspx" type="rss" />
+      <outline title="Eric Gunnerson" text="Eric Gunnerson" description="not actually a .NET blog" xmlUrl="http://blogs.msdn.com/ericgu/Rss.aspx" htmlUrl="http://blogs.msdn.com/ericgu/default.aspx" type="rss" />
+      <outline title="Joel Pobar" text="Joel Pobar" description="CLR Program Manager: Reflection, LCG, Generics and the type system..." xmlUrl="http://blogs.msdn.com/joelpob/Rss.aspx" htmlUrl="http://blogs.msdn.com/joelpob/default.aspx" type="rss" />
+      <outline title="Lisa Wollin" text="Lisa Wollin" description="Michael Kaplan's random stuff of dubious value" xmlUrl="http://blogs.msdn.com/lisawoll/rss.aspx" htmlUrl="http://blogs.msdn.com/lisawoll/default.aspx" type="rss" />
+      <outline title="Maoni" text="Maoni" description="CLR Performance" xmlUrl="http://blogs.msdn.com/maoni/Rss.aspx" htmlUrl="http://blogs.msdn.com/maoni/default.aspx" type="rss" />
+      <outline title="Raymond Chen" text="Raymond Chen" description="not actually a .NET blog" xmlUrl="http://blogs.msdn.com/oldnewthing/rss.aspx" htmlUrl="http://blogs.msdn.com/oldnewthing/default.aspx" type="rss" />
+      <outline title="VIOLATING THE CODE" text="VIOLATING THE CODE" description="and other things testers do" xmlUrl="http://blogs.msdn.com/reidlw/Rss.aspx" htmlUrl="http://blogs.msdn.com/reidlw/default.aspx" type="rss" />
+      <outline title="Sara Ford" text="Sara Ford" description="Code Coverage-Driven Testing: Making Every Line of Code Feel Dirty and Used... The blog of a former accessibility tester..." xmlUrl="http://blogs.msdn.com/saraford/rss.aspx" htmlUrl="http://blogs.msdn.com/saraford/default.aspx" type="rss" />
+      <outline title="Sara Williams" text="Sara Williams" description="musings and rants from sara williams" xmlUrl="http://blogs.msdn.com/saraw/Rss.aspx" htmlUrl="http://blogs.msdn.com/saraw/default.aspx" type="rss" />
+      <outline title="Somasegar's WebLog" text="Somasegar's WebLog" description="C++/CLI" xmlUrl="http://blogs.msdn.com/somasegar/Rss.aspx" htmlUrl="http://blogs.msdn.com/somasegar/default.aspx" type="rss" />
+      <outline title="Alex Lowe" text="Alex Lowe" xmlUrl="http://callmealex.com/cs/rss.aspx" htmlUrl="http://callmealex.com/default.aspx" type="rss" />
+      <outline title="Confessions of a G33k" text="Confessions of a G33k" description="One tech obesessed geek girl opining about current events, technology, and herself." xmlUrl="http://cleverhack.com/feed/rss2/" htmlUrl="http://cleverhack.com" type="rss" />
+      <outline title="DonXML" text="DonXML" xmlUrl="http://donxml.com/allthingstechie/Rss.aspx" htmlUrl="http://donxml.com/allthingstechie/" type="rss" />
+      <outline title="Eric Rudder" text="Eric Rudder" xmlUrl="http://msdn.microsoft.com/blogs/ericr/rss.xml" htmlUrl="http://msdn.microsoft.com/blogs/ericr/" type="rss" />
+      <outline title="Girish Bharadwaj" text="Girish Bharadwaj" description="Nothing in general actually." xmlUrl="http://msmvps.com/gbvb/Rss.aspx" htmlUrl="http://msmvps.com/gbvb/" type="rss" />
+      <outline title="The Bit Bucket" text="The Bit Bucket" description="Greg Low's Ramblings" xmlUrl="http://msmvps.com/greglow/Rss.aspx" htmlUrl="http://msmvps.com/greglow/" type="rss" />
+      <outline title="Don Box" text="Don Box" xmlUrl="http://pluralsight.com/blogs/dbox/Rss.aspx" htmlUrl="http://pluralsight.com/blogs/dbox/" type="rss" />
+      <outline title="Fear and Loathing" text="Fear and Loathing" description="SharePoint, .NET, DDD, Agile, Software Factories, and other things that go bump in my computer." xmlUrl="http://weblogs.asp.net/bsimser/Rss.aspx" htmlUrl="http://weblogs.asp.net/bsimser/" type="rss" />
+      <outline title="Smart Software" text="Smart Software" description="Wesner Moise's musings on .NET, Technology, Entrepreneurship and Life (formerly .NET Undocumented)" xmlUrl="http://wesnerm.blogs.com/net_undocumented/index.rdf" htmlUrl="http://wesnerm.blogs.com/net_undocumented/" type="rss" />
+      <outline title="Peter Golde" text="Peter Golde" description="PowerCollections (and more?)" xmlUrl="http://wintellect.com/WEBLOGS/pgolde/Rss.aspx" htmlUrl="http://wintellect.com/WEBLOGS/pgolde/" type="rss" />
+      <outline title="Darth Pedro" text="Darth Pedro" description="This blog will describe some of the learning experiences that I have with .NET, some personal projects that I'm working on, and whatever other topics tickle my fancy." xmlUrl="http://www.2rss.com/atom2rss.php?atom=http://darthpedro.blogspot.com/atom.xml" htmlUrl="http://darthpedro.blogspot.com" type="rss" />
+      <outline title="Adam Kinney" text="Adam Kinney" xmlUrl="http://www.adamkinney.com/SyndicationService.asmx/GetRss" type="rss" />
+      <outline title="{ | one, step, back | }" text="{ | one, step, back | }" description="Jim Weirich's Blog" xmlUrl="http://onestepback.org/index.cgi/index.rss" htmlUrl="http://onestepback.org/index.cgi" type="rss" />
+      <outline title="Channel 9" text="Channel 9" description="Look inside our cockpit and help us fly the plane." xmlUrl="http://channel9.msdn.com/rss.aspx" htmlUrl="http://channel9.msdn.com" type="rss" />
+      <outline type="rss" title="A Slice of Cherry Pie" text="A Slice of Cherry Pie" xmlUrl="http://asliceofcherrypie.blogspot.com/feeds/posts/full" htmlUrl="http://asliceofcherrypie.blogspot.com/index.html"/>
+      <outline type="rss" title="Apple &amp; Spice" text="Apple &amp; Spice" xmlUrl="http://appleandspice.blogspot.com/feeds/posts/default" htmlUrl="http://appleandspice.blogspot.com/index.html"/>
+      <outline type="rss" title="Bags of Flavour" text="Bags of Flavour" xmlUrl="http://bagsofflavour.blogspot.com/feeds/posts/default" htmlUrl="http://bagsofflavour.blogspot.com/"/>
+      <outline type="rss" title="blood sugar" text="blood sugar" xmlUrl="http://gkbloodsugar.wordpress.com/feed/" htmlUrl="http://gkbloodsugar.wordpress.com"/>
+      <outline type="rss" title="Cheese and Biscuits" text="Cheese and Biscuits" xmlUrl="http://cheesenbiscuits.blogspot.com/feeds/posts/default" htmlUrl="http://cheesenbiscuits.blogspot.com/"/>
+      <outline type="rss" title="Coffee and Vanilla" text="Coffee and Vanilla" xmlUrl="http://www.coffeeandvanilla.com/?feed=rss2" htmlUrl="http://www.coffeeandvanilla.com"/>
+      <outline type="rss" title="Cook sister!" text="Cook sister!" xmlUrl="http://www.cooksister.com/atom.xml" htmlUrl="http://www.cooksister.com/"/>
+      <outline type="rss" title="Del Sole" text="Del Sole" xmlUrl="http://www.delsole.co.uk/feed/" htmlUrl="http://www.delsole.co.uk"/>
+      <outline type="rss" title="Kitchen Rat" text="Kitchen Rat" xmlUrl="http://www.kitchenrat.com/index.xml" htmlUrl="http://www.kitchenrat.com/"/>
+      <outline type="rss" title="Lastest additions on Italyabroad.com" text="Lastest additions on Italyabroad.com" xmlUrl="http://www.italyabroad.com/site/base/products" htmlUrl="http://www.italyabroad.com/"/>
+      <outline type="rss" title="Ripe London" text="Ripe London" xmlUrl="http://ripelondon.typepad.com/ripelondon/index.rdf" htmlUrl="http://ripelondon.typepad.com/ripelondon/"/>
+      <outline type="rss" title="Wineass - One Line Wine Reviews" text="Wineass - One Line Wine Reviews" xmlUrl="http://www.wineass.com/feed/" htmlUrl="http://www.wineass.com"/>
+      <outline type="rss" title="wineconversation.com" text="wineconversation.com" xmlUrl="http://wineconversation.com/feed/" htmlUrl="http://wineconversation.com"/>
+      <outline type="rss" title="Food, GLorious Food" text="Food, GLorious Food" xmlUrl="http://foodgloriousfood-toto.blogspot.com/feeds/posts/default" htmlUrl="http://foodgloriousfood-toto.blogspot.com/"/>
+      <outline type="rss" title="Taking the beard out of beer!" text="Taking the beard out of beer!" xmlUrl="http://girlsguidetobeer.blogspot.com/feeds/posts/default" htmlUrl="http://girlsguidetobeer.blogspot.com/"/>
+    </outline>
+  </body>
+</opml>
