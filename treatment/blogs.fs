@@ -85,6 +85,7 @@ module BlogTreatment =
                         "&lt;", "";
                         "&gt;", "";
                         "&pound;", "£" ]
+    // TODO where should this go? is there a better choice of words
     let ignoreList = [  "nbsp"
                         "the"
                         "to"
@@ -236,7 +237,7 @@ module BlogTreatment =
         receiver.Fetch()
 
 
-
+    // TODO using the ignoreList seems to give better results than upperBound so maybe it should be removed?
     /// turn word count list into a hierarical cluster
     let clusterWordCounts progress lowerBound upperBound masterList blogs =
         // remove words that are uncommon or too common
@@ -245,7 +246,7 @@ module BlogTreatment =
             wordCount |> Map.filter (fun word wc -> 
                 let frac = wc / count
                 //printfn "%s: %i / %i = %f" word wc count frac
-                lowerBound < frac && not (List.mem word ignoreList))
+                lowerBound < frac && not (List.mem word ignoreList)) // && frac < upperBound)
 
         // build a master word list containing all the words we interested in
         let masterWordList =

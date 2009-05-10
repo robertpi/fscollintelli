@@ -15,7 +15,8 @@ and NodeDetails<'a> =
     { Left: BiculsterNode<'a>;
       Right: BiculsterNode<'a>;
       Distance: float; }
-      
+// TODO the NameValueParis field seems a bit wrong we only really need a vector here 
+// (but we rely on having the name went outputing the results)
 and BiculsterNode<'a> =
     { NameValueParis: Map<string,float>;
       NodeDetails: BiculsterNodeDetails<'a>; }

@@ -66,4 +66,11 @@
 	<Target Name="AfterBuild">
 	</Target>
 	-->
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)twits.jpg" "$(TargetDir)"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

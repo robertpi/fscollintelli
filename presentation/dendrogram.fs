@@ -11,7 +11,7 @@ open System.Windows
 open System.Windows.Media
 open Strangelights.DataTools.Clustering
 
-type Dendrogram(t) =
+type Dendrogram(t) as x =
     inherit FrameworkElement()
     let rec getHeight t =
         match t with
@@ -29,15 +29,13 @@ type Dendrogram(t) =
         getDepthInner t 0.0
     let pen = new Pen(Brushes.Black, 1.0)
     let height = getHeight t * 20.
-    let width = 600.
     let depth = getDepth t
-    
-    let scaling = width - 150. / depth 
     
     do base.Height <- height
     //do base.Width <- width
 
     override x.OnRender(dc: DrawingContext) =
+        let scaling = x.ActualWidth / depth 
         
         let rec drawNode t x y =
             match t with
@@ -51,6 +49,11 @@ type Dendrogram(t) =
                 dc.DrawLine(pen, new Point(x, top + h1 / 2.), new Point(x, bottom - h2 / 2.))
 
                 // horizontal line
+//                let text = new FormattedText(string t.Distance, CultureInfo.GetCultureInfo("en-us"),
+//                                             FlowDirection.LeftToRight,
+//                                             new Typeface("Verdana"),
+//                                             10., Brushes.Black)
+//                dc.DrawText(text, new Point(x + 5., y - 7.))
                 dc.DrawLine(pen, new Point(x, top + h1 / 2.), new Point(x + ll, top + h1 / 2.))
                 
                 dc.DrawLine(pen, new Point(x, bottom - h2 / 2.), new Point(x + ll, bottom - h2 / 2.))

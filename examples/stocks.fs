@@ -28,6 +28,7 @@ open System.Windows
 open System.Windows.Data
 open System.Windows.Controls
 
+open Strangelights.DataTools.Extensions
 open Strangelights.DataTools.DataAccess
 open Strangelights.DataTools.DataAccess
 open Strangelights.DataTools.Clustering
@@ -112,11 +113,15 @@ let djia =
       "Walmart", "WMT", "Broadline retailers"
       "Walt Disney", "DIS", "Broadcasting & entertainment" ]
 
+type StockValueHistory =
+    { StockName: String;
+      DateValues: seq<DateTime * float> }
 
 let getStocks desc =
     let getNamedStockInfo name ticker =
         async { let! res = YahooFinance.getStockInfo progress ticker DateTime.Now (DateTime.Now.AddMonths(-3))
                 return name, res }
+
     let workflows =
         desc |> Seq.map (fun (name, ticker, _) -> getNamedStockInfo name ticker)
     
@@ -130,74 +135,98 @@ let getStocks desc =
     let datePriceMap prices = Seq.map (fun (d, p, _, _, _, _, _) -> (any_to_string d), p) prices |> Map.of_seq
     res
     |> Seq.map (fun (name, prices) -> name, Seq.filter (fun (d, _, _, _, _, _, _) -> Seq.exists (fun d' -> d' = d) dates) prices)
-    |> Seq.map (fun (name, prices) -> { DataName = name; Vector = Seq.map (fun (_, p, _, _, _, _, _) -> p) prices |> Seq.cache })
-    |> Seq.cache,
-    res
-    |> Seq.map (fun (name, prices) -> name, Seq.filter (fun (d, _, _, _, _, _, _) -> Seq.exists (fun d' -> d' = d) dates) prices)
-    |> Seq.map (fun (name, prices) -> { NodeDetails = Leaf name; NameValueParis = datePriceMap prices })
+    |> Seq.map (fun (name, prices) -> { StockName = name; DateValues = Seq.map (fun (d, p, _, _, _, _, _) -> d, p) prices |> Seq.cache })
     |> Seq.cache
 
-let stocks, stocks' = getStocks djia
+let stocks = getStocks djia
 
-//let scaleDownRes fofMatrix =
-//    MultiD.scaleDown progress 2 fofMatrix 0.001
+let initClusterNodes stocks = 
+    let datePriceMap prices = 
+        Seq.map (fun (d, p) -> string d, p) prices 
+        |> Map.of_seq
+    let convertStockHist { StockName = name; DateValues = prices } = 
+        { NodeDetails = Leaf name; NameValueParis = datePriceMap prices }
+    Seq.cmap convertStockHist stocks :> seq<_>
+    
+let clusterTree =  Clustering.buildClusterTree progress (initClusterNodes stocks)
 
-//let res = scaleDownRes stocks
-
-let res' =  Clustering.buildClusterTree progress stocks'
-
-//let viewer = new MutliDScaling2DViewer(res)
-let viewer' = new Dendrogram(res'.NodeDetails)
-//let tab1 = new TabItem(Content = viewer, Header = "Mutli-diminsional scaling") 
+let viewer' = new Dendrogram(clusterTree.NodeDetails)
 
 let nbl<'a when 'a:(new:unit->'a) and 'a: struct and 'a :> ValueType> x = new Nullable<'a>(x)
 
-let dataSeries =
+let calcPerformance stocks =
+    let perf points =
+        let _, first = Seq.hd points
+        Seq.map (fun (x, y) -> x, (y / first - 1.) * 100.) points
+    Seq.map (fun ({ DateValues = points } as stock) -> { stock with DateValues = perf points }) stocks
+
+let dataSeries stocks =
     let series name points =
         let dataSeries = new DataSeries(RenderAs = RenderAs.Line, LegendText = name,
                                         LineThickness = nbl 0.5)
-        let first = Seq.hd points
-        Seq.map (fun x -> (x / first - 1.) * 100.) points
-        |> Seq.iter (fun x -> dataSeries.DataPoints.Add(new DataPoint(YValue = x)))
+        points |>
+        Seq.iter (fun (_, y) -> dataSeries.DataPoints.Add(new DataPoint(YValue = y)))
         dataSeries
-    Seq.map (fun { DataName = name; Vector = points } -> series name points) stocks
+    Seq.map (fun { StockName = name; DateValues = points } -> series name points) stocks
     |> Seq.cache
 
-type ChartCheckbox(title) =
+type ChartCheckbox(title, dataSeries: seq<DataSeries>) =
     inherit DockPanel()
+    let dataSeries = List.of_seq dataSeries
+    //do printfn "Seq.length dataSeries: %i" (Seq.length dataSeries)
+
     let chart =
         let chart = new Chart()
         chart.Height <- 500.
         chart.Titles.Add(new Title(Text = title))
         chart
 
-    let listBox =
-        let listBox = new ListBox()
-        stocks |> Seq.iter (fun { DataName = name } -> 
-            let chkbx = new CheckBox(Content = name)
+    let chkBoxes =
+        dataSeries |> List.map (fun serie -> 
+            let chkbx = new CheckBox(Content = serie.LegendText)
             chkbx.Checked.Add(fun _ ->
-                let series = dataSeries |> Seq.find (fun x -> x.LegendText = name)
+                let series = dataSeries |> Seq.find (fun x -> x.LegendText = serie.LegendText)
                 chart.Series.Add(series)
                 chart.InvalidateVisual())
             chkbx.Unchecked.Add(fun _ ->
-                let series = dataSeries |> Seq.find (fun x -> x.LegendText = name)
+                let series = dataSeries |> Seq.find (fun x -> x.LegendText = serie.LegendText)
                 chart.Series.Remove(series) |> ignore
                 chart.InvalidateVisual())
-            listBox.Items.Add(chkbx) |> ignore)
-        new ScrollViewer(Content = listBox)
-
+            chkbx)
+    let listBox =
+        let listBox = new ListBox()
+        chkBoxes |> Seq.iter (fun chkbx -> listBox.Items.Add(chkbx) |> ignore)
+        listBox
+    let selectButton text select =
+        let button = new Button(Content = text)
+        button.Click.Add(fun _ -> 
+            chkBoxes |> Seq.iter (fun chkbx -> 
+                chkbx.IsChecked <- nbl select))
+        button
+    let stackPanel =
+        let buttonsPanel = new StackPanel(Orientation = Orientation.Horizontal)
+        buttonsPanel.Children.Add(selectButton "Select All" true) |> ignore
+        buttonsPanel.Children.Add(selectButton "Unselect All" false) |> ignore
+        let stackPanel = new StackPanel()
+        stackPanel.Children.Add(buttonsPanel) |> ignore
+        stackPanel.Children.Add(listBox) |> ignore
+        new ScrollViewer(Content = stackPanel)
     do DockPanel.SetDock(chart, Dock.Top)
     do base.Children.Add(chart) |> ignore
-    do DockPanel.SetDock(listBox, Dock.Bottom)
-    do base.Children.Add(listBox) |> ignore
+    do DockPanel.SetDock(stackPanel, Dock.Bottom)
+    do base.Children.Add(stackPanel) |> ignore
 
-let tab2 = new TabItem(Content = ChartCheckbox("My chart"), Header = "Charts") 
+let valuesTab = new TabItem(Content = ChartCheckbox("Raw Values", dataSeries stocks), 
+                            Header = "Raw Values Chart") 
+let perfTab = new TabItem(Content = ChartCheckbox("Performance", dataSeries (calcPerformance stocks)), 
+                          Header = "Performance Chart") 
 let tab3 = new TabItem(Content = viewer', Header = "Dendogram") 
 
 let tabs = 
     let tabs = new TabControl()
     tabs.Items.Add(tab3) |> ignore
-    tabs.Items.Add(tab2) |> ignore
+    tabs.Items.Add(valuesTab) |> ignore
+    tabs.Items.Add(perfTab) |> ignore
     tabs
 
 let window = new Window(Content = tabs)

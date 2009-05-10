@@ -4,7 +4,7 @@
 // This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
 // Contact Robert Pickering via: http://strangelights.com/
 
-module Strangelights.DataTools.Treatment.Twitter
+namespace Strangelights.DataTools.Treatment
 #if INTERACTIVE
 #I @"C:\Program Files\Reference Assemblies\Microsoft\Framework\v3.5"
 #r "System.Threading"
@@ -26,8 +26,7 @@ open System.Xml.XPath
 open System.Globalization
 open Strangelights.DataTools.DataAccess
 open Strangelights.DataTools.Clustering
-
-let progress = printfn "%s"
+open Strangelights.DataTools.Optimization
 
 type Tweeter =
     { Id: int;
@@ -35,13 +34,14 @@ type Tweeter =
       ScreenName: string;
       PictureUrl: string; } 
 
-let treatTweeter name progress (stream: Stream) =
-    progress (Printf.sprintf "Getting: %s" name)
-    let xdoc = new XPathDocument(stream)
-    let nav = xdoc.CreateNavigator()
-    let xpath = nav.Compile("users/user")
-    let iter = nav.Select(xpath)
-    let items =
+module Twitter =
+    let progress = printfn "%s"
+
+    let treatTweeter progress (stream: Stream) =
+        let xdoc = new XPathDocument(stream)
+        let nav = xdoc.CreateNavigator()
+        let xpath = nav.Compile("users/user")
+        let iter = nav.Select(xpath)
         [ for x in iter -> 
             let x  = x :?> XPathNavigator
             let getValue (nodename: string) =
@@ -51,27 +51,50 @@ let treatTweeter name progress (stream: Stream) =
               Name = getValue "name";
               ScreenName = getValue "screen_name";
               PictureUrl = getValue "profile_image_url"; } ]
-    name, items
-//    ((items
-//    |> Seq.take (min (List.length items) 20)
-//    |> Seq.cache) :> seq<_>)
 
-let friendsUrl = Printf.sprintf "http://twitter.com/statuses/friends/%s.xml"
+    let getFriendsCount progress (stream: Stream) =
+        let xdoc = new XPathDocument(stream)
+        let nav = xdoc.CreateNavigator()
+        let iter = nav.Select("user/friends_count")
+        let items =
+            [ for x in iter do
+                yield x.ToString() ]
+        match items with
+        | [ followers ] -> Int32.Parse followers
+        | _ -> failwith "assert false"
 
-let getAllFriendsOfFriends name = 
-    let url = friendsUrl name
-    let name, friends = Async.Run (HttpXml.getContents progress url (treatTweeter name) ("", []))
-    let friendsScreenName = Seq.map (fun { ScreenName = sn } -> sn) friends
-    let friendsOfFriendsWorkflows = Seq.map (fun sn -> HttpXml.getContents progress (friendsUrl sn) (treatTweeter sn) ("", [])) friendsScreenName
-    friendsScreenName, Async.Run (Async.Parallel friendsOfFriendsWorkflows)
+    let treatIds id progress (stream: Stream) =
+        let xdoc = new XPathDocument(stream)
+        let nav = xdoc.CreateNavigator()
+        let xpath = nav.Compile("ids/id")
+        let iter = nav.Select(xpath)
+        let items =
+            [ for x in iter do
+                yield Int32.Parse(x.ToString()) ]
+        id, items
+
+    let friendsUrl = sprintf "http://twitter.com/statuses/friends/%s.xml?page=%i"
+    let showUserUrl = sprintf "http://twitter.com/users/show/%s.xml"
+    let friendsIdUrl = sprintf "http://twitter.com/friends/ids.xml?user_id=%i"
     
+    let getAllFriends progress name =
+        let count = Async.Run (HttpXml.getContents progress (showUserUrl name) getFriendsCount 0) 
+        printfn "count: %i" count
+        let urls = List.map (friendsUrl name) [ 0 .. (count / 100) + 1 ] 
+        Async.Run (Async.Parallel (List.map (fun url -> HttpXml.getContents progress url treatTweeter []) urls))
+        |> Seq.to_list |> List.concat
 
-let getFof firstScreenName = 
-    let friendsScreenName, fof = getAllFriendsOfFriends firstScreenName
-    Seq.map (fun (name, friends) -> name, Seq.map (fun fsn  -> if Seq.exists (fun { ScreenName = sn }-> fsn = sn) friends then 2. else 1.) friendsScreenName) fof
-    |> Seq.map (fun (name, fvect) -> { DataName = name; Vector = fvect })
-
-//Seq.length fofMatrix
-
-let scaleDownRes fofMatrix =
-    MultiD.scaleDown progress 2 fofMatrix 0.01
+    let getAllFof id (ids: list<int>) = 
+        let friendsOfFriendsWorkflows = Seq.map (fun sn -> HttpXml.getContents progress (friendsIdUrl sn) (treatIds sn) (0, [])) ids
+        let res = Async.Run (Async.Parallel friendsOfFriendsWorkflows)
+        let allIds = (id, ids) :: List.of_array res
+        let rec pairsOfFloats list =
+            match list with
+            | x :: y :: list -> (x,y) :: pairsOfFloats list
+            | [] -> []
+            | _ -> failwith "uneven list"
+        let costFun points =
+            0.
+        let res = annealing [ for _ in 1 .. (Seq.length allIds) do yield 400., 400. ] costFun 
+        pairsOfFloats (List.of_seq res)
+        
