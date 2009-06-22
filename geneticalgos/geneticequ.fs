@@ -156,7 +156,7 @@ module GenericExpressions =
             let res =
                 [ for expr in currPop ->
                     scoreFunction expr, expr ]
-            let res = List.sort (fun (score1,_) (score2,_) -> compare score1 score2) res
+            let res = List.sortBy (fun (score,_) -> score) res
             let score,winner = List.hd res
             
             // print the winner ... just for info

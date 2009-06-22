@@ -32,15 +32,16 @@ type Tweeter =
     { Id: int;
       Name: string;
       ScreenName: string;
-      PictureUrl: string; } 
+      PictureUrl: string;
+      FriendsCount: int } 
 
 module Twitter =
     let progress = printfn "%s"
 
-    let treatTweeter progress (stream: Stream) =
+    let treatTweeter prefix progress (stream: Stream) =
         let xdoc = new XPathDocument(stream)
         let nav = xdoc.CreateNavigator()
-        let xpath = nav.Compile("users/user")
+        let xpath = nav.Compile(prefix + "user")
         let iter = nav.Select(xpath)
         [ for x in iter -> 
             let x  = x :?> XPathNavigator
@@ -50,18 +51,8 @@ module Twitter =
             { Id = Int32.Parse(getValue "id");
               Name = getValue "name";
               ScreenName = getValue "screen_name";
-              PictureUrl = getValue "profile_image_url"; } ]
-
-    let getFriendsCount progress (stream: Stream) =
-        let xdoc = new XPathDocument(stream)
-        let nav = xdoc.CreateNavigator()
-        let iter = nav.Select("user/friends_count")
-        let items =
-            [ for x in iter do
-                yield x.ToString() ]
-        match items with
-        | [ followers ] -> Int32.Parse followers
-        | _ -> failwith "assert false"
+              PictureUrl = getValue "profile_image_url";
+              FriendsCount = Int32.Parse(getValue "friends_count") } ]
 
     let treatIds id progress (stream: Stream) =
         let xdoc = new XPathDocument(stream)
@@ -78,16 +69,18 @@ module Twitter =
     let friendsIdUrl = sprintf "http://twitter.com/friends/ids.xml?user_id=%i"
     
     let getAllFriends progress name =
-        let count = Async.Run (HttpXml.getContents progress (showUserUrl name) getFriendsCount 0) 
-        printfn "count: %i" count
-        let urls = List.map (friendsUrl name) [ 0 .. (count / 100) + 1 ] 
-        Async.Run (Async.Parallel (List.map (fun url -> HttpXml.getContents progress url treatTweeter []) urls))
-        |> Seq.to_list |> List.concat
+        let [ tweeter ] = Async.RunSynchronously (HttpXml.getContents progress (showUserUrl name) (treatTweeter "") []) 
+        printfn "count: %i" tweeter.FriendsCount
+        let urls = List.map (friendsUrl name) [ 0 .. (tweeter.FriendsCount / 100) + 1 ]
+        let friends =
+            Async.RunSynchronously (Async.Parallel (List.map (fun url -> HttpXml.getContents progress url (treatTweeter "users/") []) urls))
+            |> Seq.to_list |> List.concat
+        tweeter, friends
 
     let getAllFof id (ids: list<int>) = 
         let friendsOfFriendsWorkflows = Seq.map (fun sn -> HttpXml.getContents progress (friendsIdUrl sn) (treatIds sn) (0, [])) ids
-        let res = Async.Run (Async.Parallel friendsOfFriendsWorkflows)
-        let allIds = (id, ids) :: List.of_array res
+        let res = Async.RunSynchronously (Async.Parallel friendsOfFriendsWorkflows)
+        let allIds = List.of_array res
         let rec pairsOfFloats list =
             match list with
             | x :: y :: list -> (x,y) :: pairsOfFloats list
@@ -95,6 +88,6 @@ module Twitter =
             | _ -> failwith "uneven list"
         let costFun points =
             0.
-        let res = annealing [ for _ in 1 .. (Seq.length allIds) do yield 400., 400. ] costFun 
-        pairsOfFloats (List.of_seq res)
-        
+        let res = annealing [ for _ in 1 .. 2 * (Seq.length allIds) do yield 0., 1. ] costFun 
+        let coords = pairsOfFloats (List.of_seq res)
+        ((id, ids), (0.5, 0.5)) :: List.zip allIds coords

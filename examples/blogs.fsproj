@@ -57,7 +57,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\fscollintelli\Strangelights.DataTools.fsproj">
+    <ProjectReference Include="..\..\Strangelights.DataTools\Strangelights.DataTools.fsproj">
       <Name>Strangelights.DataTools</Name>
       <Project>{9ef089b2-11fa-42fb-9db8-6a1412759bc6}</Project>
       <Private>True</Private>

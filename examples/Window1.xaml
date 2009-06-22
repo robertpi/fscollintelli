@@ -3,7 +3,7 @@
     Title="Blog Hierarical Clustering" Height="600" Width="800">
     <Grid>
         <Button Height="23" HorizontalAlignment="Right" Name="startButton" VerticalAlignment="Top" Width="75">Start</Button>
-        <TextBox Height="23" Margin="0,1.861,77.77,0" Name="opmlUrl" VerticalAlignment="Top">C:\code\fscollintelli\examples\combined.opml</TextBox>
+        <TextBox Height="23" Margin="0,1.861,77.77,0" Name="opmlUrl" VerticalAlignment="Top">C:\Users\Robert\Documents\presenations\tutorial\demos\Part09_CI\examples\combined.opml</TextBox>
         <TextBox Height="23" Name="statusBar" VerticalAlignment="Bottom" IsReadOnly="True" />
         <TabControl Margin="0,62.216,0,28.58">
             <TabItem Header="Tree">

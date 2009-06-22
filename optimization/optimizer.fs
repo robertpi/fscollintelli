@@ -9,7 +9,7 @@ open System
 
 let randomSolution domain = 
     let rand = new Random()
-    seq { for (max, min) in domain -> (rand.NextDouble() * (max - min))  + min }
+    seq { for (min, max) in domain -> (rand.NextDouble() * (max - min))  + min }
 
 let random domain cost =
     let best = Double.MaxValue

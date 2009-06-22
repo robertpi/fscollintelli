@@ -290,11 +290,14 @@ module BlogTreatment =
             else
                 opmlFileToTitleUlrs progress url
         let opml = Seq.take (min (Seq.length opml) limit) opml
+        printfn "opml:%i" (Seq.length opml)
         let masterList, blogs = titleUlrsToWordCountMap local progress timeout opml
+        printfn "masterList:%i blogs:%i" (Seq.length masterList) (Seq.length blogs)
+        let wc = Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
+        printfn "wcs: %i" (Seq.length wc)
         let clustersList, chosen =
-            Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
             //|> (fun blogs -> Set.to_seq (Set.of_seq blogs))
-            |> clusterWordCounts progress lowerLimit upperLimit masterList
+            clusterWordCounts progress lowerLimit upperLimit masterList wc
         masterList, blogs, clustersList, chosen
 
     let mdScaling progress clustersList =

@@ -60,7 +60,7 @@ type Dendrogram(t) as x =
                 
                 drawNode t.Left.NodeDetails (x + ll) (top + h1 / 2.)
                 drawNode t.Right.NodeDetails (x + ll) (bottom - h2 / 2.)
-           | Leaf v ->
+            | Leaf v ->
                 let text = new FormattedText(v, CultureInfo.GetCultureInfo("en-us"),
                                              FlowDirection.LeftToRight,
                                              new Typeface("Verdana"),
