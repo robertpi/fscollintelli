@@ -22,7 +22,8 @@ let getContents progress (url: string) action errRes =
             use stream = resp.GetResponseStream()
             return action progress stream
           with ex ->
-            progress (Printf.sprintf "%O" ex)
+            printfn "%s" url
+            printfn "%O" ex
             progress (Printf.sprintf "error for: %s" url)
             return errRes }
             

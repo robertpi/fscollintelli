@@ -28,6 +28,7 @@ open System.Windows
 open System.Windows.Threading
 open System.Windows.Controls
 open System.Windows.Media.Imaging
+open System.Windows.Media
 
 open Strangelights.DataTools
 open Strangelights.DataTools.DataAccess
@@ -61,19 +62,11 @@ type FriendViewer(twit: Tweeter) as x =
     do updateStatus (sprintf "Creating friend: %s" twit.ScreenName)
     let image = new Image(Width = 100., Height = 100.)
     let finishedTrigger, finished = Event.create()
-    let finishImage progress (stream: Stream) =
-        let updateDelegate =
-            new InvokeThing(fun _ -> 
-                let decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.Default)
-                image.Source <- decoder.Frames.[0]
-                progress (sprintf "Finshed: %s" twit.ScreenName)
-                finishedTrigger decoder.Frames.[0])
-        image.Dispatcher.Invoke(DispatcherPriority.Normal, updateDelegate) |> ignore
-    let imageWF = HttpXml.getContents updateStatus twit.PictureUrl finishImage ()
     let checkBox = new CheckBox(Content = twit.ScreenName)
     do addChildren x [ dc checkBox;  dc image; ]
-    do Async.Start(imageWF)
-    member x.FinishedImage = finished
+    member x.ImageSource
+        with get() = image.Source
+        and set img = image.Source <- img
     member x.IsSelected
         with get() = if not checkBox.IsChecked.HasValue then false else checkBox.IsChecked.Value
         and set value = checkBox.IsChecked <- Nullable value
@@ -81,7 +74,7 @@ type FriendViewer(twit: Tweeter) as x =
         
 
 
-let tweeterViewer = new Image(Width = 200., Height = 200.)
+let tweeterViewer = new Image(Width = 100., Height = 100.)
 let listView = new ListView(Width = 200.)
 let iterAllItems func =
     for item in (listView.Items :> IEnumerable) do
@@ -105,8 +98,9 @@ let listPanel =
     addChildren buttonPanel [ dc selectAll; dc deselectAll ]
 
     let topPanel = new DockPanel()
+    DockPanel.SetDock(tweeterViewer, Dock.Top)
     DockPanel.SetDock(buttonPanel, Dock.Top)
-    addChildren topPanel [ dc buttonPanel; dc listView ]
+    addChildren topPanel [ dc tweeterViewer; dc buttonPanel; dc listView ]
     topPanel
 
 let mainPanel = new Border()
@@ -114,8 +108,9 @@ let mainPanel = new Border()
 let topControls = 
     let screenName = new TextBox(Text = "robertpi", Width = 400.)
     let getFriends = new Button(Content = "Get Friends", Width = 100.)
-    let draw = new Button(Content = "Draw Friends Map", Width = 100.)
+    let draw = new Button(Content = "Map Friends", Width = 100.)
     getFriends.Click.Add(fun _ ->
+        listView.Items.Clear()
         let bckWrk = new BackgroundWorker()
         let username =  screenName.Text
         updateStatus (sprintf "Getting things for: %s" username)
@@ -124,10 +119,49 @@ let topControls =
         bckWrk.RunWorkerCompleted.Add(fun ea ->
             updateStatus (sprintf "Finished getting things for: %s" username)
             let tweeter, friends =  ea.Result :?> (Tweeter * list<Tweeter>)
+            let finishImage progress (stream: Stream) =
+                let updateDelegate =
+                    new InvokeThing(fun _ -> 
+                        let decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.Default)
+                        tweeterViewer.Source <- decoder.Frames.[0]
+                        tweeterViewer.InvalidateVisual()
+                        progress (sprintf "Finshed: %s" tweeter.ScreenName))
+                tweeterViewer.Dispatcher.Invoke(DispatcherPriority.Normal, updateDelegate) |> ignore
+            let imageWF = HttpXml.getContents updateStatus tweeter.PictureUrl finishImage ()
+            Async.Start imageWF
             tweeterViewer.Tag <- tweeter
-            let fvs = List.map (fun x -> new FriendViewer(x)) friends
-            Seq.iter (fun x -> listView.Items.Add(x) |> ignore) fvs
-            fvs |> Seq.iter (fun x -> x.FinishedImage.Add(fun _ -> listView.InvalidateVisual())))
+            let processFriend x =
+                let fv = new FriendViewer(x)
+                let finishImage progress (stream: Stream) =
+                    let updateDelegate =
+                        new InvokeThing(fun _ -> 
+                            let decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.None, BitmapCacheOption.Default)
+                            fv.ImageSource <- decoder.Frames.[0]
+                            printfn "Finshed: %s" x.ScreenName
+                            progress (sprintf "Finshed: %s" x.ScreenName)
+                            listView.InvalidateVisual() )
+                    listView.Dispatcher.Invoke(DispatcherPriority.Normal, updateDelegate) |> ignore
+                let imageWF = HttpXml.getContents updateStatus x.PictureUrl finishImage ()
+                fv, imageWF
+            let fvImageWFs = List.map processFriend friends
+            let fvs, imageWFs = List.unzip fvImageWFs
+            let rec startLimited wfs max =
+                let sem = new System.Threading.Semaphore(max, max)
+                let wrapWF wf =
+                    async { use _ = { new IDisposable with member x.Dispose() = sem.Release() |> ignore }
+                            let! _ = sem.AsyncWaitOne()
+                            do Async.Start wf }
+                let wfs' = List.map wrapWF wfs
+                Async.Start (Async.Ignore (Async.Parallel wfs')) 
+//                printfn "Starting image batch ..."
+//                let takeNo = (min 20 (Seq.length images))
+//                let toProcess = Seq.take takeNo images
+//                Async.RunSynchronously(Async.Parallel toProcess) |> ignore
+//                if takeNo = 20 then
+//                    processImages (Seq.skip takeNo images)
+//            System.Threading.ThreadPool.QueueUserWorkItem(fun _ -> processImages imageWFs) |> ignore
+            startLimited imageWFs 10
+            Seq.iter (fun x -> listView.Items.Add(x) |> ignore) fvs)
         bckWrk.RunWorkerAsync())
     draw.Click.Add(fun _ ->
         let bckWrk = new BackgroundWorker()
@@ -135,24 +169,24 @@ let topControls =
         let friends = 
             getAllItems ()
             |> Seq.filter (fun twit -> twit.IsSelected)
-            |> Seq.map (fun twit -> twit.Tweeter)
+            |> Seq.map (fun twit -> twit.Tweeter, twit.ImageSource)
             |> Seq.to_list
         let friendIds =
             friends
-            |> List.map (fun twit -> twit.Id)
+            |> List.map (fun (twit, _) -> twit.Id)
         let twitIdMap =
-            tweeter :: friends
-            |> List.map (fun twit -> twit.Id, twit)
+            (tweeter, tweeterViewer.Source) :: friends
+            |> List.map (fun ((twit, _) as x) -> twit.Id, x)
             |> Map.of_list
         bckWrk.DoWork.Add(fun ea ->
-            updateStatus (sprintf "Get matrix for selected friends") //friends)
+            updateStatus (sprintf "Get matrix for selected friends")
             let fofMatrix = 
                 Twitter.getAllFof tweeter.Id friendIds
                 |> List.map (fun ((id, conns), loc) -> 
-                    let twit = twitIdMap.[id]
+                    let twit, pic = twitIdMap.[id]
                     { Id = id;
                       Text = twit.Name;
-                      Picture = None;
+                      Picture = Some pic;
                       Location = loc;
                       Connections = conns }) 
             ea.Result <- fofMatrix)
@@ -170,11 +204,10 @@ let topControls =
 let mainDock = 
     DockPanel.SetDock(statusBar, Dock.Bottom)
     DockPanel.SetDock(topControls, Dock.Top)
-    DockPanel.SetDock(tweeterViewer, Dock.Left)
     DockPanel.SetDock(listPanel, Dock.Left)
     let dp = new DockPanel()
     addChildren dp [ dc statusBar; dc topControls; 
-                     dc tweeterViewer; dc listPanel; dc mainPanel ]
+                     dc listPanel; dc mainPanel ]
     dp
 
 let window = new Window(Title = "Robert Pickering's \"the twits\"", 

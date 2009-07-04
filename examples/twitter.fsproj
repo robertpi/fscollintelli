@@ -43,6 +43,11 @@
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
+    <Reference Include="System.Xml, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+      <Name>System.Xml</Name>
+      <AssemblyName>System.XML.dll</AssemblyName>
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
     <Reference Include="WindowsBase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
       <Name>WindowsBase</Name>
       <AssemblyName>WindowsBase.dll</AssemblyName>
@@ -52,7 +57,7 @@
     <Compile Include="twitterFrontEnd.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\fscollintelli\Strangelights.DataTools.fsproj">
+    <ProjectReference Include="..\..\Strangelights.DataTools\Strangelights.DataTools.fsproj">
       <Name>Strangelights.DataTools</Name>
       <Project>{9ef089b2-11fa-42fb-9db8-6a1412759bc6}</Project>
       <Private>True</Private>

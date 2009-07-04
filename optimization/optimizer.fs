@@ -28,7 +28,7 @@ let random domain cost =
             best
     loop 0 (randomSolution domain) best
     
-let hillclimb domain cost =
+let hillclimb init domain cost =
     let len = Seq.length domain
     let rec loop best ccost =
         let generateNeigbours dir i (max, min) =
@@ -44,19 +44,23 @@ let hillclimb domain cost =
         
         let (best', ccost') = Seq.fold findBest (best, ccost) lowers
         let (best', ccost') = Seq.fold findBest (best', ccost') heights
+        printfn "current: %f, best: %f" ccost ccost'
         if ccost' = ccost then
             best
         else
             loop best' ccost'
 
+    loop init (cost init)
+
+let hillclimbInitRand init domain cost =
     let sol = randomSolution domain
-    loop sol (cost sol)
-    
+    hillclimb sol domain cost    
+
 let annealing domain cost =
     let rand = new Random()
     let len = Seq.length domain
 
-    let rec loop t best =
+    let rec loop t best eb =
         let i = rand.Next(len)
         let min, max = Seq.nth i domain
         let step = float (rand.Next(-1, 1))
@@ -64,16 +68,17 @@ let annealing domain cost =
                 let prop = x - step
                 if i = i' && min < prop && prop < max then prop else x) best
         let ea = cost sol
-        let eb = cost best
+        printfn "current: %f, best: %f" ea eb
         let p = System.Math.E ** ((-ea - eb) / t)
-        let best =
+        let best, eb' =
             if ea < eb || rand.NextDouble() < p then
-                sol
+                sol, ea
             else
-                best
+                best, eb
         if t > 0.1 then
-            loop (t * 0.95) best
+            loop (t * 0.95) best eb'
         else
             best
 
-    loop 10000. (randomSolution domain)
+    let rnd = randomSolution domain
+    loop 10000. rnd (cost rnd)

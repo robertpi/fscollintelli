@@ -24,6 +24,7 @@ open System.Text
 open System.Xml
 open System.Xml.XPath
 open System.Globalization
+open Strangelights.DataTools.Extensions
 open Strangelights.DataTools.DataAccess
 open Strangelights.DataTools.Clustering
 open Strangelights.DataTools.Optimization
@@ -55,6 +56,8 @@ module Twitter =
               FriendsCount = Int32.Parse(getValue "friends_count") } ]
 
     let treatIds id progress (stream: Stream) =
+//        let reader = new StreamReader(stream)
+//        File.WriteAllText((sprintf @"C:\code\Strangelights.DataTools\examples\%i.xml" id), reader.ReadToEnd())
         let xdoc = new XPathDocument(stream)
         let nav = xdoc.CreateNavigator()
         let xpath = nav.Compile("ids/id")
@@ -78,16 +81,89 @@ module Twitter =
         tweeter, friends
 
     let getAllFof id (ids: list<int>) = 
+        let initIdsSet = Set.of_list (id :: ids)
         let friendsOfFriendsWorkflows = Seq.map (fun sn -> HttpXml.getContents progress (friendsIdUrl sn) (treatIds sn) (0, [])) ids
         let res = Async.RunSynchronously (Async.Parallel friendsOfFriendsWorkflows)
-        let allIds = List.of_array res
+        let allIds = List.map (fun (id, ids) -> id, List.filter (fun id -> Set.contains id initIdsSet) ids) (List.of_array res)
+        let prepClusterNodes (id, ids) =
+            let idSet = Set.of_list ids 
+            id, Seq.map (fun id -> id, if Set.contains id idSet then 1. else 0.) initIdsSet |> List.of_seq
+        let hcids = List.map prepClusterNodes allIds
+//        let initScaleNodes (id,ids) = { DataName = string id; Vector = List.map snd ids }
+//        let mdScaleNodes = List.map initScaleNodes hcids
+//        let coords = MultiD.scaleDown progress 2 mdScaleNodes 0.01 |> List.map (fun { Location = [x; y] } -> x, y)
+        let initClusterNodes allIds = 
+            let idMap ids = 
+                Seq.map (fun (id, connected) -> string id, connected) ids 
+                |> Map.of_seq
+            let convert (id, ids) = 
+                { NodeDetails = Leaf id; NameValueParis = idMap ids }
+            List.map convert allIds
+        let clusterTree =  Clustering.buildClusterTree progress (initClusterNodes hcids)
+//        let rec getHeight t =
+//            match t with
+//            | Node { Left = l; Right = r } -> 
+//                (getHeight l.NodeDetails) + (getHeight r.NodeDetails)
+//            | Leaf x -> 1.
+//        let rec getNodePos t (step: float) x y acc =
+//            match t with
+//            | Node { Left = l; Right = r } -> 
+//                let acc = (getNodePos l.NodeDetails step (x + step) (y - step) acc) 
+//                (getNodePos r.NodeDetails step (x - step) (y + step) acc)
+//            | Leaf _ -> (x,y) :: acc
+//        let height = getHeight clusterTree.NodeDetails
+//        let coords = getNodePos clusterTree.NodeDetails (1. / height) 0.5 0.5 [] 
+        let rec getNodes t acc =
+            match t with
+            | Node { Left = l; Right = r } -> 
+                let acc = (getNodes l.NodeDetails acc) 
+                (getNodes r.NodeDetails acc)
+            | Leaf x -> x :: acc
+        let nodes = getNodes clusterTree.NodeDetails []
+        let theta = (Math.PI * 2.0) / double (List.length nodes) 
+        // X = R cos(Theta) + Xo, Y = R sin(Theta) + Yo
+        let nodeCoord = 
+            nodes 
+            |> List.mapi (fun step id ->
+                let r = (double ((step % 3) + 1) * 0.1)
+                let step = double step
+                id, ((r * cos(step * theta)) + 0.5, (r * sin(step * theta)) + 0.5))
+            |> Map.of_list
+        let initSol = 
+            allIds
+            |> List.map (fun (id,ids) -> 
+                let x, y = nodeCoord.[id]
+                [ x; y ] )
+            |> List.concat
         let rec pairsOfFloats list =
             match list with
             | x :: y :: list -> (x,y) :: pairsOfFloats list
             | [] -> []
             | _ -> failwith "uneven list"
         let costFun points =
-            0.
-        let res = annealing [ for _ in 1 .. 2 * (Seq.length allIds) do yield 0., 1. ] costFun 
+            let cords = List.zip allIds (pairsOfFloats (List.of_seq points))
+            let map = 
+                List.map (fun ((id, _), cord) -> id, cord) cords
+                |> Map.of_list 
+            let connections = 
+               seq { for (_, (x1, y1)) in cords do
+                         yield (x1, y1), (0.5, 0.5)
+                     for ((id, ids), (x1, y1)) in cords do
+                        for id' in ids do
+                            if map.ContainsKey id' then
+                                let x2, y2 = map.[id']
+                                yield (x1,y1), (x2,y2) }
+            Seq.combinations2 (Set.of_seq connections)
+            |> Seq.fold (fun acc (((x1,y1), (x2,y2)), ((x3,y3), (x4,y4))) ->
+                let den = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+                if den = 0. then
+                    acc
+                else
+                    let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / den
+                    let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / den
+                    if 0. < ua && ub < 1. && 0. < ub && ub < 1. then acc + 1.
+                    else acc) 0. 
+        let res = hillclimb initSol [ for _ in 1 .. 2 * (Seq.length allIds) do yield 0., 1. ] costFun 
         let coords = pairsOfFloats (List.of_seq res)
-        ((id, ids), (0.5, 0.5)) :: List.zip allIds coords
+        ((id, ids), (0.5, 0.5)) :: List.zip allIds coords 
+        
