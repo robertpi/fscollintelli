@@ -77,17 +77,17 @@ module Twitter =
         let urls = List.map (friendsUrl name) [ 0 .. (tweeter.FriendsCount / 100) + 1 ]
         let friends =
             Async.RunSynchronously (Async.Parallel (List.map (fun url -> HttpXml.getContents progress url (treatTweeter "users/") []) urls))
-            |> Seq.to_list |> List.concat
+            |> Seq.toList |> List.concat
         tweeter, friends
 
     let getAllFof id (ids: list<int>) = 
-        let initIdsSet = Set.of_list (id :: ids)
+        let initIdsSet = Set.ofList (id :: ids)
         let friendsOfFriendsWorkflows = Seq.map (fun sn -> HttpXml.getContents progress (friendsIdUrl sn) (treatIds sn) (0, [])) ids
         let res = Async.RunSynchronously (Async.Parallel friendsOfFriendsWorkflows)
-        let allIds = List.map (fun (id, ids) -> id, List.filter (fun id -> Set.contains id initIdsSet) ids) (List.of_array res)
+        let allIds = List.map (fun (id, ids) -> id, List.filter (fun id -> Set.contains id initIdsSet) ids) (List.ofArray res)
         let prepClusterNodes (id, ids) =
-            let idSet = Set.of_list ids 
-            id, Seq.map (fun id -> id, if Set.contains id idSet then 1. else 0.) initIdsSet |> List.of_seq
+            let idSet = Set.ofList ids 
+            id, Seq.map (fun id -> id, if Set.contains id idSet then 1. else 0.) initIdsSet |> List.ofSeq
         let hcids = List.map prepClusterNodes allIds
 //        let initScaleNodes (id,ids) = { DataName = string id; Vector = List.map snd ids }
 //        let mdScaleNodes = List.map initScaleNodes hcids
@@ -95,7 +95,7 @@ module Twitter =
         let initClusterNodes allIds = 
             let idMap ids = 
                 Seq.map (fun (id, connected) -> string id, connected) ids 
-                |> Map.of_seq
+                |> Map.ofSeq
             let convert (id, ids) = 
                 { NodeDetails = Leaf id; NameValueParis = idMap ids }
             List.map convert allIds
@@ -128,7 +128,7 @@ module Twitter =
                 let r = (double ((step % 3) + 1) * 0.1)
                 let step = double step
                 id, ((r * cos(step * theta)) + 0.5, (r * sin(step * theta)) + 0.5))
-            |> Map.of_list
+            |> Map.ofList
         let initSol = 
             allIds
             |> List.map (fun (id,ids) -> 
@@ -141,10 +141,10 @@ module Twitter =
             | [] -> []
             | _ -> failwith "uneven list"
         let costFun points =
-            let cords = List.zip allIds (pairsOfFloats (List.of_seq points))
+            let cords = List.zip allIds (pairsOfFloats (List.ofSeq points))
             let map = 
                 List.map (fun ((id, _), cord) -> id, cord) cords
-                |> Map.of_list 
+                |> Map.ofList 
             let connections = 
                seq { for (_, (x1, y1)) in cords do
                          yield (x1, y1), (0.5, 0.5)
@@ -153,7 +153,7 @@ module Twitter =
                             if map.ContainsKey id' then
                                 let x2, y2 = map.[id']
                                 yield (x1,y1), (x2,y2) }
-            Seq.combinations2 (Set.of_seq connections)
+            Seq.combinations2 (Set.ofSeq connections)
             |> Seq.fold (fun acc (((x1,y1), (x2,y2)), ((x3,y3), (x4,y4))) ->
                 let den = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
                 if den = 0. then
@@ -164,6 +164,6 @@ module Twitter =
                     if 0. < ua && ub < 1. && 0. < ub && ub < 1. then acc + 1.
                     else acc) 0. 
         let res = hillclimb initSol [ for _ in 1 .. 2 * (Seq.length allIds) do yield 0., 1. ] costFun 
-        let coords = pairsOfFloats (List.of_seq res)
+        let coords = pairsOfFloats (List.ofSeq res)
         ((id, ids), (0.5, 0.5)) :: List.zip allIds coords 
         

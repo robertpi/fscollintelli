@@ -24,6 +24,7 @@ open System
 open Strangelights.DataTools
 open Strangelights.DataTools.Extensions
 open Strangelights.DataTools.Clustering
+open Strangelights.DataTools.Treatment
 
 let progress = printfn "%s"
 
@@ -67,12 +68,12 @@ let urlInfos =
           "gsx:populationwithsustainableaccesstoimproveddrinkingwatersourcestotal", "Population with sustainable access to improved drinking water sources (%) total"; 
           "gsx:populationwithsustainableaccesstoimprovedsanitationtotal", "Population with sustainable access to improved sanitation (%) total"; ] ]
 
-let data = Gdata.processData progress makeUrl urlInfos
+let data = GData.processData progress makeUrl urlInfos
 let tree = Clustering.buildClusterTree progress data
 let control = new Dendrogram(tree.NodeDetails)
 let window = new System.Windows.Window(Content = control)
 
-let data' = Gdata.reverseMatrix data
+let data' = GData.reverseMatrix data
 let tree' = Clustering.buildClusterTree progress data'
 let control' = new Dendrogram(tree'.NodeDetails)
 let window' = new System.Windows.Window(Content = control')

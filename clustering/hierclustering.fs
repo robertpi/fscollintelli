@@ -24,24 +24,23 @@ and BiculsterNode<'a> =
 module Clustering =
     /// turns a list of cluster nodes into a hierarchal cluster tree
     let buildClusterTree progress clusters =
-        let keys m = Map.to_seq m |> Seq.cmap snd
+        let keys m = Map.toSeq m |> Seq.cmap snd
         let compareNodes { NameValueParis = c1 } { NameValueParis = c2 } =
             let wc1, wc2 = keys c1, keys c2
             1. - abs (Measures.pearson wc1 wc2)
         let initComparisons = 
             progress (Printf.sprintf "Building initial comparison set ...")
-            let clusters = Set.to_seq (Set.of_seq clusters)
+            let clusters = Set.toSeq (Set.ofSeq clusters)
             let clusterParis = Seq.combinations2 clusters
             //Seq.iter (fun (x,y) -> if x = y then System.Windows.MessageBox.Show ("found pair " + (any_to_string x) + (any_to_string y)) |> ignore) toto
             clusterParis
-            |> Seq.cmap (fun (c1, c2) -> compareNodes c1 c2, (c1, c2))
-            |> Map.of_seq
+            |> Seq.map (fun (c1, c2) -> compareNodes c1 c2, (c1, c2))
+            |> Map.ofSeq
         let averageWordMap wc1 wc2 =
-            Seq.map2 (fun (word, v1) (_, v2) -> word, (v1 + v2) / 2.) (Map.to_list wc2) (Map.to_list wc1)
-            |> Map.of_seq
+            Seq.map2 (fun (word, v1) (_, v2) -> word, (v1 + v2) / 2.) (Map.toList wc2) (Map.toList wc1)
+            |> Map.ofSeq
         let rec innerBuildTree comparisons clusters =
-            let first = Map.first (fun dist culst ->  Some(dist, culst)) comparisons
-            let (dist, (c1, c2)) = Option.get first
+            let (dist, (c1, c2)) = Map.pick (fun dist clust ->  Some(dist, clust)) comparisons
             progress (Printf.sprintf "clusters: %i comparisons: %i" (Seq.length clusters) (Seq.length comparisons))
             //if c1 = c2 then System.Windows.MessageBox.Show (Printf.sprintf "clusters: %i comparisons: %i" (Seq.length clusters) (Seq.length comparisons)) |> ignore
             let restComps = Map.filter (fun _ (c1', c2') -> not (c1 = c1' || c2 = c2' || c1 = c2' || c1' = c2)) comparisons

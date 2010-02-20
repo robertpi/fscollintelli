@@ -1,4 +1,3 @@
-#light
 // Copyright (c) 2009 All Right Reserved, Robert Pickering
 //
 // This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.

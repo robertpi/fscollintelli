@@ -24,8 +24,8 @@ open Strangelights.DataTools.UI
 let processWords words =
     words
     |> Seq.filter (fun (word, count) -> count > 0.)
-    |> Seq.sort_by (fun (_, count) -> count)
-    |> Seq.to_list
+    |> Seq.sortBy (fun (_, count) -> count)
+    |> Seq.toList
     |> List.rev
 
 type Invokee = delegate of unit -> unit
@@ -75,12 +75,12 @@ let nodeSelectChanged node =
     outputDetail.Text <- ""
     allWords.Text <- ""
     usedWords.Text <- ""
-    let wc = processWords (Map.to_seq node.NameValueParis)
+    let wc = processWords (Map.toSeq node.NameValueParis)
     wc |> Seq.iter (fun (word, count) ->  usedWords.AppendText(Printf.sprintf "%s: %f\n" word count))
     match node.NodeDetails with
     | Leaf { Name = name; Url = url; OriginalWordCount = wordmap } ->
         currentUrl.Text <- url
-        let owc = processWords (Map.to_seq wordmap)
+        let owc = processWords (Map.toSeq wordmap)
         outputDetail.Text <- (Printf.sprintf "%s\n%s\nUsed Total Words: %i\nOrginal Total Words: %i" name url wc.Length owc.Length)
         owc |> Seq.iter (fun (word, count) ->  allWords.AppendText(Printf.sprintf "%s: %f\n" word count))
     | Node { Distance = dist } ->
@@ -117,8 +117,8 @@ let start() =
 
     let showResult result =
         drawTree treeView.Items result.BiculsterTree
-        let total = Map.fold_left(fun total _ count -> total + count) 0. result.MasterWordList
-        processWords (Map.to_seq result.MasterWordList)
+        let total = Map.fold(fun total _ count -> total + count) 0. result.MasterWordList
+        processWords (Map.toSeq result.MasterWordList)
         |> Seq.iter (fun (word, count) ->  masterWordList.AppendText(Printf.sprintf "%s: %f = %f%%\n" word count ((count / total) * 100.)))
         let chosenWords = Seq.cmap (fun word -> word, result.MasterWordList.[word]) result.ChosenWords
         chosenWords
@@ -148,7 +148,7 @@ let start() =
                   NameValueParis = node.NameValueParis }
         let node = mapNodes result.BiculsterTree
         dendrogramContainer.Content <- new Dendrogram(node.NodeDetails)
-        multidscaleContainer.Content <- new MutliDScaling2DViewer(List.of_seq result.MulitDScaling)
+        multidscaleContainer.Content <- new MutliDScaling2DViewer(List.ofSeq result.MulitDScaling)
         enable true
 
         progress (Printf.sprintf "Done - Processed: %i in %O" result.ProcessedBlogs stopwatch.Elapsed)

@@ -19,20 +19,20 @@ module Seq =
     let cmap f s = Seq.map f s |> Seq.cache
     let rec combinations n items =
         let rec comb n curn items combs =
-            cmap (fun item ->
+            Seq.map (fun item ->
                         match curn with
                         | 1 -> Seq.concat (comb n 2 (Seq.filter (fun x -> x <> item) items) (seq { yield seq { yield item } }))
                         | _ when n = curn ->
-                            seq { for comb in combs do yield Seq.cons item comb }
+                            seq { for comb in combs do yield seq { yield item; yield! comb } }
                         | _ ->
-                            Seq.concat (comb n (curn + 1) (Seq.filter (fun x -> x <> item) items) (seq { for comb in combs do yield Seq.cons item comb })) )
+                            Seq.concat (comb n (curn + 1) (Seq.filter (fun x -> x <> item) items) (seq { for comb in combs do yield seq { yield item; yield! comb } })) )
                         items
-        Seq.concat (comb n 1 items (Seq.of_list []))
+        Seq.concat (comb n 1 items (Seq.ofList []))
 
     /// combine every item with every other item
     let rec combinations2 items =
         let combs = combinations 2 items
-        cmap (fun l -> Seq.nth 0 l, Seq.nth 1 l) combs
+        Seq.map (fun l -> Seq.nth 0 l, Seq.nth 1 l) combs
 //    let rec combinations2 items =
 //      let head = Seq.hd items
 //      let items' = Seq.skip 1 items
@@ -44,10 +44,10 @@ module MapOps =
     // merge two word count lists
     let mergeFloatMap wc1 wc2 =
         let merge acc (word, count) =
-            match Map.tryfind word acc with
+            match Map.tryFind word acc with
             | Some (newCount: float) -> Map.add word (count + newCount) acc
             | None -> Map.add word count acc
-        Seq.fold merge wc1 (Map.to_seq wc2)
+        Seq.fold merge wc1 (Map.toSeq wc2)
 
 module Measures =
     let euclidean (wc1: seq<float>) (wc2: seq<float>) =

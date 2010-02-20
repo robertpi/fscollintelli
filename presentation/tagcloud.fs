@@ -19,7 +19,7 @@ type TagCloud(words: seq<string * float>, blogs: seq<BlogLeafDetails>) as x =
     let min = Seq.fold (fun acc (_,count) -> min acc count) 0. words
     let dist = max - min
     let threshold = (dist * 0.1) + min
-    let triggerBlogClicked, blogClicked = Event.create()
+    let event = new Event<BlogLeafDetails>()
     let showList word =
         let blogs = 
             blogs |>
@@ -29,7 +29,7 @@ type TagCloud(words: seq<string * float>, blogs: seq<BlogLeafDetails>) as x =
         blogs |> Seq.iter (fun blog ->
                 let mi = new MenuItem(Header = blog.Name)
                 mi.Click.Add(fun _ ->
-                    triggerBlogClicked blog)
+                    event.Trigger blog)
                 cm.Items.Add(mi) |> ignore)
         cm.Visibility <- Visibility.Visible
         cm.IsOpen <- true
@@ -44,4 +44,4 @@ type TagCloud(words: seq<string * float>, blogs: seq<BlogLeafDetails>) as x =
             button.Click.Add(fun _ -> showList word)
             button)
     do Seq.iter (fun b -> x.Children.Add(b) |> ignore) words
-    member x.BlogClicked = blogClicked
+    member x.BlogClicked = event.Publish

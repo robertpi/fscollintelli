@@ -126,13 +126,13 @@ let getStocks desc =
         desc |> Seq.map (fun (name, ticker, _) -> getNamedStockInfo name ticker)
     
     let res =
-        Async.Run(Async.Parallel workflows)
-        |> Seq.filter (fun (_, l) ->  not (Seq.is_empty l))
+        Async.RunSynchronously(Async.Parallel workflows)
+        |> Seq.filter (fun (_, l) ->  not (Seq.isEmpty l))
 
     let dates = 
-        Seq.map (fun (_,res) -> Set.of_seq (Seq.map (fun (d, _, _, _, _, _, _) -> d) res)) res
-        |> Seq.reduce Set.intersect |> Set.to_seq
-    let datePriceMap prices = Seq.map (fun (d, p, _, _, _, _, _) -> (any_to_string d), p) prices |> Map.of_seq
+        Seq.map (fun (_,res) -> Set.ofSeq (Seq.map (fun (d, _, _, _, _, _, _) -> d) res)) res
+        |> Seq.reduce Set.intersect |> Set.toSeq
+    let datePriceMap prices = Seq.map (fun (d, p, _, _, _, _, _) -> (printfn "%A" d), p) prices |> Map.ofSeq
     res
     |> Seq.map (fun (name, prices) -> name, Seq.filter (fun (d, _, _, _, _, _, _) -> Seq.exists (fun d' -> d' = d) dates) prices)
     |> Seq.map (fun (name, prices) -> { StockName = name; DateValues = Seq.map (fun (d, p, _, _, _, _, _) -> d, p) prices |> Seq.cache })
@@ -143,7 +143,7 @@ let stocks = getStocks djia
 let initClusterNodes stocks = 
     let datePriceMap prices = 
         Seq.map (fun (d, p) -> string d, p) prices 
-        |> Map.of_seq
+        |> Map.ofSeq
     let convertStockHist { StockName = name; DateValues = prices } = 
         { NodeDetails = Leaf name; NameValueParis = datePriceMap prices }
     Seq.cmap convertStockHist stocks :> seq<_>
@@ -156,7 +156,7 @@ let nbl<'a when 'a:(new:unit->'a) and 'a: struct and 'a :> ValueType> x = new Nu
 
 let calcPerformance stocks =
     let perf points =
-        let _, first = Seq.hd points
+        let _, first = Seq.head points
         Seq.map (fun (x, y) -> x, (y / first - 1.) * 100.) points
     Seq.map (fun ({ DateValues = points } as stock) -> { stock with DateValues = perf points }) stocks
 
@@ -172,7 +172,7 @@ let dataSeries stocks =
 
 type ChartCheckbox(title, dataSeries: seq<DataSeries>) =
     inherit DockPanel()
-    let dataSeries = List.of_seq dataSeries
+    let dataSeries = List.ofSeq dataSeries
     //do printfn "Seq.length dataSeries: %i" (Seq.length dataSeries)
 
     let chart =

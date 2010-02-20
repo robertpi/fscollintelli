@@ -10,6 +10,7 @@ open System.IO
 open System.Net
 open System.Xml
 open System.Xml.XPath
+open Microsoft.FSharp.Control.WebExtensions
 open Strangelights.DataTools.Extensions
 
 /// builds a generic worflow that returns the result of action or a

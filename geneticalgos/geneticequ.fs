@@ -6,6 +6,7 @@
 
 namespace Strangelights.DataTools
 open System
+open System.Numerics
 open Microsoft.FSharp.Math
 
 /// Untyped expression tree
@@ -157,7 +158,7 @@ module GenericExpressions =
                 [ for expr in currPop ->
                     scoreFunction expr, expr ]
             let res = List.sortBy (fun (score,_) -> score) res
-            let score,winner = List.hd res
+            let score,winner = List.head res
             
             // print the winner ... just for info
             printfn "\nGen:%i score:%A" currGen score
@@ -210,7 +211,7 @@ module GenericExpressions =
         let results =
             [ for (x,y),res in data ->
                 res - evaluateExpression [x;y] expr ]
-        results |> List.fold_left (fun acc x -> BigInt.Abs (BigInt x) + acc) 0I
+        results |> List.fold (fun acc x -> BigInteger.Abs (BigInteger x) + acc) 0I
 
 #if INTERACTIVE
 // call the evolve function

@@ -37,7 +37,7 @@ type ReceiveBlogAgent() =
                                
                         | Fetch  replyChannel  ->
                             // post response to reply channel and end
-                            do replyChannel.Reply(masterList, Seq.of_list blogs)
+                            do replyChannel.Reply(masterList, Seq.ofList blogs)
                             return () }
  
              // The initial state of the message processing state machine...
@@ -86,107 +86,107 @@ module BlogTreatment =
                         "&gt;", "";
                         "&pound;", "£" ]
     // TODO where should this go? is there a better choice of words
-    let ignoreList = [  "nbsp"
-                        "the"
-                        "to"
-                        "a"
-                        "of"
-                        "and"
-                        "in"
-                        "that"
-                        "is"
-                        "for"
-                        "this"
-                        "you"
-                        "we"
-                        "it"
-                        "on"
-                        "are"
-                        "be"
-                        "with"
-                        "i"
-                        "can"
-                        "if"
-                        "an"
-                        "or"
-                        "as"
-                        "all"
-                        "have"
-                        "at"
-                        "but"
-                        "will"
-                        "from"
-                        "so"
-                        "some"
-                        "your"
-                        "by"
-                        "when"
-                        "more"
-                        "not"
-                        "one"
-                        "like"
-                        "which"
-                        "our"
-                        "other"
-                        "new"
-                        "has"
-                        "0"
-                        "1"
-                        "2"
-                        "3"
-                        "4"
-                        "5"
-                        "6"
-                        "7"
-                        "8"
-                        "9"
-                        "only"
-                        "these"
-                        "do"
-                        "what"
-                        "there"
-                        "would"
-                        "any"
-                        "they"
-                        "was"
-                        "now"
-                        "then"
-                        "into"
-                        "my"
-                        "using"
-                        "it’s"
-                        "should"
-                        "no"
-                        "must"
-                        "its"
-                        "were"
-                        "had"
-                        "about"
-                        "it's"
-                        "just"
-                        "me"
-                        "i'm"
-                        "i'll"
-                        "well"
-                        "you're"
-                        "very"
-                        "i'd"
-                        "how"
-                        "their"
-                        "am"
-                        "too"
-                        "his"
-                        "get"
-                        "also"
-                        "been"
-                        "while"
-                        "us"
-                        "who"
-                        "them"
-                        "he"
-                        "that's"
-                        "i’m"
-                        "you’re" ]
+    let ignoreList = Set.ofList [       "nbsp"
+                                        "the"
+                                        "to"
+                                        "a"
+                                        "of"
+                                        "and"
+                                        "in"
+                                        "that"
+                                        "is"
+                                        "for"
+                                        "this"
+                                        "you"
+                                        "we"
+                                        "it"
+                                        "on"
+                                        "are"
+                                        "be"
+                                        "with"
+                                        "i"
+                                        "can"
+                                        "if"
+                                        "an"
+                                        "or"
+                                        "as"
+                                        "all"
+                                        "have"
+                                        "at"
+                                        "but"
+                                        "will"
+                                        "from"
+                                        "so"
+                                        "some"
+                                        "your"
+                                        "by"
+                                        "when"
+                                        "more"
+                                        "not"
+                                        "one"
+                                        "like"
+                                        "which"
+                                        "our"
+                                        "other"
+                                        "new"
+                                        "has"
+                                        "0"
+                                        "1"
+                                        "2"
+                                        "3"
+                                        "4"
+                                        "5"
+                                        "6"
+                                        "7"
+                                        "8"
+                                        "9"
+                                        "only"
+                                        "these"
+                                        "do"
+                                        "what"
+                                        "there"
+                                        "would"
+                                        "any"
+                                        "they"
+                                        "was"
+                                        "now"
+                                        "then"
+                                        "into"
+                                        "my"
+                                        "using"
+                                        "it’s"
+                                        "should"
+                                        "no"
+                                        "must"
+                                        "its"
+                                        "were"
+                                        "had"
+                                        "about"
+                                        "it's"
+                                        "just"
+                                        "me"
+                                        "i'm"
+                                        "i'll"
+                                        "well"
+                                        "you're"
+                                        "very"
+                                        "i'd"
+                                        "how"
+                                        "their"
+                                        "am"
+                                        "too"
+                                        "his"
+                                        "get"
+                                        "also"
+                                        "been"
+                                        "while"
+                                        "us"
+                                        "who"
+                                        "them"
+                                        "he"
+                                        "that's"
+                                        "i’m"
+                                        "you’re" ]
 
     /// action that turns an RSS stream into a map of word/count pairs
     let treatRss title url (receiver: ReceiveBlogAgent) progress (stream: Stream) =
@@ -199,7 +199,7 @@ module BlogTreatment =
             seq { for word in words do
                     if word <> "" then yield word.ToLower() }
         let countWords acc word =
-            if Map.mem word acc then
+            if Map.containsKey word acc then
                 let count = (Map.find word acc) + 1.
                 Map.add word count acc
             else
@@ -217,8 +217,8 @@ module BlogTreatment =
 
     /// download opml stream then turn into title/url paris
     let opmlFileToTitleUlrs progress url = 
-        let urlsWorkflow = HttpXml.getContents progress url treatOpml (Seq.of_list [])
-        Async.Run urlsWorkflow
+        let urlsWorkflow = HttpXml.getContents progress url treatOpml (Seq.ofList [])
+        Async.RunSynchronously urlsWorkflow
 
     /// download rss files and turn into word/count maps     
     let titleUlrsToWordCountMap local progress timeout urls = 
@@ -232,7 +232,7 @@ module BlogTreatment =
                 else
                     HttpXml.getContents progress url (treatRss title url receiver) ())
         try
-            Async.Run (Async.Parallel flows, timeout = timeout) |> ignore
+            Async.RunSynchronously (Async.Parallel flows, timeout = timeout) |> ignore
         with :? TimeoutException -> progress "Request timed out"
         receiver.Fetch()
 
@@ -242,32 +242,32 @@ module BlogTreatment =
     let clusterWordCounts progress lowerBound upperBound masterList blogs =
         // remove words that are uncommon or too common
         let remove (wordCount: Map<_, _>) =
-            let count = Map.fold_left(fun total _ count -> total + count) 0. wordCount
+            let count = Map.fold(fun total _ count -> total + count) 0. wordCount
             wordCount |> Map.filter (fun word wc -> 
                 let frac = wc / count
                 //printfn "%s: %i / %i = %f" word wc count frac
-                lowerBound < frac && not (List.mem word ignoreList)) // && frac < upperBound)
+                lowerBound < frac && not (Set.contains word ignoreList)) // && frac < upperBound)
 
         // build a master word list containing all the words we interested in
         let masterWordList =
             masterList
             |> remove
-            |> Map.to_seq
+            |> Map.toSeq
             |> Seq.cmap fst
         
         // ensure wordcount only contains words from master list    
         let addjustToMasterList wordCount =
             masterWordList 
             |> Seq.cmap (fun word -> 
-                match Map.tryfind word wordCount with
+                match Map.tryFind word wordCount with
                 | Some count -> word, count
                 | None -> word, 0.)
-            |> Map.of_seq
+            |> Map.ofSeq
 
         // build inital cluster list
         let clustersList =
             blogs
-            |> Seq.sort_by (fun { Title = title } -> title)
+            |> Seq.sortBy (fun { Title = title } -> title)
             |> Seq.cmap (fun { Title = title; Url = url; BlogWordCount = wordmap } ->
                     { NameValueParis = addjustToMasterList wordmap;
                       NodeDetails = Leaf { Name = title;
@@ -284,7 +284,7 @@ module BlogTreatment =
                     treatOpml progress (File.OpenRead url)
                 elif Directory.Exists url then
                     Directory.GetFiles url
-                    |> Seq.cmap (fun path -> Path.GetFileNameWithoutExtension(path), path) :> seq<_>
+                    |> Seq.cmap (fun path -> Path.GetFileNameWithoutExtension(path), path)
                 else
                     failwith "couldn't find file/directory"
             else
@@ -293,7 +293,7 @@ module BlogTreatment =
         printfn "opml:%i" (Seq.length opml)
         let masterList, blogs = titleUlrsToWordCountMap local progress timeout opml
         printfn "masterList:%i blogs:%i" (Seq.length masterList) (Seq.length blogs)
-        let wc = Seq.filter (fun { BlogWordCount = wc } -> not (Map.is_empty wc)) blogs
+        let wc = Seq.filter (fun { BlogWordCount = wc } -> not (Map.isEmpty wc)) blogs
         printfn "wcs: %i" (Seq.length wc)
         let clustersList, chosen =
             //|> (fun blogs -> Set.to_seq (Set.of_seq blogs))
@@ -306,7 +306,7 @@ module BlogTreatment =
             | Leaf { Name = n } -> n
             | Node _ -> ""
         let namesVectors = 
-            Seq.cmap (fun { NameValueParis = wc; NodeDetails = nd } -> { DataName = getName nd; Vector = List.map snd (Map.to_list wc) }) clustersList
+            Seq.cmap (fun { NameValueParis = wc; NodeDetails = nd } -> { DataName = getName nd; Vector = List.map snd (Map.toList wc) }) clustersList
             |> Seq.cache
         MultiD.scaleDown progress 3 namesVectors 0.01
 

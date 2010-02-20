@@ -36,7 +36,6 @@ open Strangelights.DataTools.UI
 open Strangelights.DataTools.Extensions
 open Strangelights.DataTools.Clustering
 open Strangelights.DataTools.Treatment
-
 //let fofMatrix = Twitter.getFof "robertpi"
 
 
@@ -61,7 +60,6 @@ type FriendViewer(twit: Tweeter) as x =
     inherit StackPanel()
     do updateStatus (sprintf "Creating friend: %s" twit.ScreenName)
     let image = new Image(Width = 100., Height = 100.)
-    let finishedTrigger, finished = Event.create()
     let checkBox = new CheckBox(Content = twit.ScreenName)
     do addChildren x [ dc checkBox;  dc image; ]
     member x.ImageSource
@@ -149,7 +147,7 @@ let topControls =
                 let sem = new System.Threading.Semaphore(max, max)
                 let wrapWF wf =
                     async { use _ = { new IDisposable with member x.Dispose() = sem.Release() |> ignore }
-                            let! _ = sem.AsyncWaitOne()
+                            let! _ = sem.AwaitWaitHandle()
                             do Async.Start wf }
                 let wfs' = List.map wrapWF wfs
                 Async.Start (Async.Ignore (Async.Parallel wfs')) 
@@ -170,14 +168,14 @@ let topControls =
             getAllItems ()
             |> Seq.filter (fun twit -> twit.IsSelected)
             |> Seq.map (fun twit -> twit.Tweeter, twit.ImageSource)
-            |> Seq.to_list
+            |> Seq.toList
         let friendIds =
             friends
             |> List.map (fun (twit, _) -> twit.Id)
         let twitIdMap =
             (tweeter, tweeterViewer.Source) :: friends
             |> List.map (fun ((twit, _) as x) -> twit.Id, x)
-            |> Map.of_list
+            |> Map.ofList
         bckWrk.DoWork.Add(fun ea ->
             updateStatus (sprintf "Get matrix for selected friends")
             let fofMatrix = 

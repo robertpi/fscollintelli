@@ -30,7 +30,7 @@ type CsvReader<'a>(s: Stream, ?skipRows: int, ?dateFormat: string) =
                             DateTime.ParseExact(s, format, null)
                         with _ ->
                             printfn "Error parsing: %s" s 
-                            rethrow()
+                            reraise()
                 | None -> DateTime.Parse
             fun x -> parser x :> obj
         | _ when t = typeof<float> ->
@@ -39,7 +39,7 @@ type CsvReader<'a>(s: Stream, ?skipRows: int, ?dateFormat: string) =
                             Double.Parse(s, CultureInfo.InvariantCulture) :> obj
                         with _ ->
                             printfn "Error parsing: %s" s 
-                            rethrow()
+                            reraise()
         | _  ->
             let parse = t.GetMethod("Parse", BindingFlags.Static ||| BindingFlags.Public, null, [| typeof<string> |], null)
             fun (s: string) ->
@@ -55,18 +55,18 @@ type CsvReader<'a>(s: Stream, ?skipRows: int, ?dateFormat: string) =
         | None -> lines
     let parseRow row = 
         let items =
-            Seq.zip (List.of_array row) funcs
+            Seq.zip (List.ofArray row) funcs
             |> Seq.map (fun (ele, parser) -> parser ele)
-        FSharpValue.MakeTuple(Array.of_seq items, typeof<'a>)
+        FSharpValue.MakeTuple(Array.ofSeq items, typeof<'a>)
     let items = 
         lines 
         |> Seq.map (fun x -> (parseRow (x.Split([|','|]))) :?> 'a)
-        |> Seq.to_list 
+        |> Seq.toList 
     interface seq<'a> with
         member x.GetEnumerator() = 
-           let seq = Seq.of_list items
+           let seq = Seq.ofList items
            seq.GetEnumerator()
     interface IEnumerable with
         member x.GetEnumerator() = 
-           let seq = Seq.of_list items
+           let seq = Seq.ofList items
            seq.GetEnumerator() :> IEnumerator

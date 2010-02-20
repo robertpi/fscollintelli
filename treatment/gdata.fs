@@ -1,8 +1,8 @@
-﻿#light
-// Copyright (c) 2009 All Right Reserved, Robert Pickering
+﻿// Copyright (c) 2009 All Right Reserved, Robert Pickering
 //
 // This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
 // Contact Robert Pickering via: http://strangelights.com/
+module Strangelights.DataTools.Treatment.GData
 
 open System
 open Strangelights.DataTools.DataAccess
@@ -14,7 +14,7 @@ type Location =
       NameValuesList: seq<string * option<float>> }
 
 let createLocation names row  =
-    let country = Seq.hd row
+    let country = Seq.head row
     let row = Seq.skip 1 row
     let tryParse s =
         let success,res = Double.TryParse s
@@ -30,7 +30,7 @@ let getData progress makeUrl urls =
                 let names = Seq.skip 1 (Seq.map snd colNames)
                 let! data = HttpXml.getGoogleSpreadSheet progress url cols
                 return Seq.map (createLocation names) data  }
-    Async.Run (Async.Parallel (List.map getData urls))
+    Async.RunSynchronously (Async.Parallel (List.map getData urls))
 
 let processData progress makeUrls urls =
     let data = Seq.concat (getData progress makeUrls urls)
@@ -43,15 +43,15 @@ let processData progress makeUrls urls =
         { Country = country;
           NameValuesList = allValues }
     Seq.map creatMasterLocation countries
-    |> Seq.filter (fun { NameValuesList = vals } -> not (Seq.exists (fun (_, value) -> Option.is_none value) vals))
+    |> Seq.filter (fun { NameValuesList = vals } -> not (Seq.exists (fun (_, value) -> Option.isNone value) vals))
     //|> Seq.take 10 // uncomment to work with a smaller set and spead things up
     |> Seq.map (fun loc ->
         let counts = Seq.map (fun (name,value) -> name, Option.get value) loc.NameValuesList
-        { NameValueParis = Map.of_seq counts; NodeDetails = Leaf loc.Country; })
+        { NameValueParis = Map.ofSeq counts; NodeDetails = Leaf loc.Country; })
 
 let reverseMatrix initalNodes =
-    let node = Seq.hd initalNodes
-    let values = Seq.map fst (Map.to_seq node.NameValueParis)
+    let node = Seq.head initalNodes
+    let values = Seq.map fst (Map.toSeq node.NameValueParis)
     let getName node =
        match node.NodeDetails with
        | Leaf s -> s
@@ -59,5 +59,5 @@ let reverseMatrix initalNodes =
     let reverse value =
         let counts =
             initalNodes |> Seq.map (fun node -> getName node, node.NameValueParis.[value])
-        { NameValueParis = Map.of_seq counts; NodeDetails = Leaf value; }
+        { NameValueParis = Map.ofSeq counts; NodeDetails = Leaf value; }
     Seq.map reverse values
