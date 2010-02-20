@@ -1,4 +1,3 @@
-#light
 // Copyright (c) 2009 All Right Reserved, Robert Pickering
 //
 // This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
@@ -215,7 +214,7 @@ module GenericExpressions =
 
 #if INTERACTIVE
 // call the evolve function
-evolve scoreFunction 0.1 0.7 0.7 500 500 4 10 2
+GenericExpressions.evolve GenericExpressions.scoreFunction 0.1 0.7 0.7 500 500 4 10 2
 
 printExpression it
 
@@ -244,5 +243,5 @@ let results =
     [ for (x,y),res in data ->
         evaluateExpression [x;y] expr ]
         
-List.fold_left (fun acc x -> (abs x) + (abs acc)) 0 results
+List.fold (fun acc x -> (abs x) + (abs acc)) 0 results
 #endif
