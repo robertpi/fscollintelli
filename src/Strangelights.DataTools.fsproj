@@ -41,8 +41,8 @@
     <Compile Include="geneticalgos\geneticequ.fs" />
     <Compile Include="clustering\hierclustering.fs" />
     <Compile Include="clustering\multidscaling.fs" />
-    <Compile Include="dendrogram.fs" />
-    <Compile Include="multidscaling2Dviewer.fs" />
+    <Compile Include="ui\dendrogram.fs" />
+    <Compile Include="ui\multidscaling2Dviewer.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core" />
