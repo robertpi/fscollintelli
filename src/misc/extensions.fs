@@ -1,5 +1,4 @@
-﻿#light
-// Copyright (c) 2009 All Right Reserved, Robert Pickering
+﻿// Copyright (c) 2009 All Right Reserved, Robert Pickering
 //
 // This source is subject to the GLPv2, please see Strangelights.DataTools.gpl-2.0.txt.
 // Contact Robert Pickering via: http://strangelights.com/
@@ -7,13 +6,6 @@
 namespace Strangelights.DataTools.Extensions
 open System
 open System.Linq
-
-module PSeq =
-    // Import some stuff from PLink
-    let asParallel list: IParallelEnumerable<_> = ParallelQuery.AsParallel(list)
-    let map f list = ParallelEnumerable.Select(asParallel list, new Func<_, _>(f))
-    let reduce f list = ParallelEnumerable.Aggregate(asParallel list, new Func<_, _, _>(f))
-    let fold f acc list = ParallelEnumerable.Aggregate(asParallel list, acc, new Func<_, _, _>(f))
             
 module Seq =
     let cmap f s = Seq.map f s |> Seq.cache

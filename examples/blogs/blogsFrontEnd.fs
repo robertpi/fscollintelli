@@ -133,12 +133,12 @@ let start() =
                 accNodes acc right
             | Leaf node -> node :: acc
         
-        let tagCloud = new TagCloud(chosenWords, accNodes [] result.BiculsterTree)
-        tagCloud.BlogClicked.Add(fun { Name = name; Url = url } ->
-            currentUrl.Text <- url
-            postBrowser.Navigate(new Uri(url))
-            currentPost.IsSelected <- true)
-        tagCloudContainer.Content <- tagCloud
+//        let tagCloud = new TagCloud(chosenWords, accNodes [] result.BiculsterTree)
+//        tagCloud.BlogClicked.Add(fun { Name = name; Url = url } ->
+//            currentUrl.Text <- url
+//            postBrowser.Navigate(new Uri(url))
+//            currentPost.IsSelected <- true)
+//        tagCloudContainer.Content <- tagCloud
 
         let rec mapNodes node =
             match node.NodeDetails with

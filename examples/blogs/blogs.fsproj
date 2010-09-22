@@ -5,13 +5,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{f8cdbbce-1b8c-4d9e-a2b8-18e17672d9da}</ProjectGuid>
+    <ProjectGuid>{a3646504-7023-46e9-a34b-e5829afe958f}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>gdata</RootNamespace>
-    <AssemblyName>stocks</AssemblyName>
+    <RootNamespace>blogs2</RootNamespace>
+    <AssemblyName>blogs</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <Name>gdata</Name>
+    <Name>blogs2</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -31,12 +31,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>3</WarningLevel>
   </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll')" />
-  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition="Exists('$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <ItemGroup>
-    <Compile Include="stocks.fs" />
-    <None Include="App.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <Compile Include="blogs.fs" />
+    <Compile Include="blogsFrontEnd.fs" />
+    <None Include="Window1.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -49,20 +49,18 @@
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Xaml" />
-    <Reference Include="UIAutomationTypes" />
+    <Reference Include="System.Xml" />
     <Reference Include="WindowsBase" />
-    <Reference Include="WPFVisifire.Charts, Version=2.1.0.0, Culture=neutral, PublicKeyToken=99d724542e4db593">
-      <Name>WPFVisifire.Charts</Name>
-      <AssemblyName>WPFVisifire.Charts.dll</AssemblyName>
-      <HintPath>..\WPFVisifire.Charts.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <ProjectReference Include="..\..\fscollintelli\Strangelights.DataTools.fsproj">
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Strangelights.DataTools.fsproj">
       <Name>Strangelights.DataTools</Name>
       <Project>{9ef089b2-11fa-42fb-9db8-6a1412759bc6}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll')" />
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition="Exists('$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
@@ -70,4 +68,7 @@
 	<Target Name="AfterBuild">
 	</Target>
 	-->
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)\Window1.xaml" "$(TargetDir)"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
