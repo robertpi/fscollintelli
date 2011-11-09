@@ -281,7 +281,13 @@ module BlogTreatment =
         let opml =
             if local then
                 if File.Exists url then
-                    treatOpml progress (File.OpenRead url)
+                    if (Path.GetExtension url) = ".txt" then
+                        File.ReadAllLines url
+                        |> Seq.map (fun x -> x.Trim())
+                        |> Seq.filter (fun x -> not (String.IsNullOrWhiteSpace x))
+                        |> Seq.map (fun x -> x, x)
+                    else
+                        treatOpml progress (File.OpenRead url)
                 elif Directory.Exists url then
                     Directory.GetFiles url
                     |> Seq.cmap (fun path -> Path.GetFileNameWithoutExtension(path), path)

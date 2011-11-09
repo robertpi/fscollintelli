@@ -5,6 +5,7 @@
 // Contact Robert Pickering via: http://strangelights.com/
 
 open System
+open System.IO
 open System.Globalization
 open System.Windows
 open System.Windows.Controls
@@ -113,7 +114,10 @@ let start() =
     let stopwatch = new Stopwatch()
     bgwkr.DoWork.Add(fun ea ->
         stopwatch.Start()
-        ea.Result <- BlogTreatment.processOpmlAll progress local url lowerBounds upperBounds limit timeout)
+        try
+            ea.Result <- BlogTreatment.processOpmlAll progress local url lowerBounds upperBounds limit timeout
+        with
+        | Failure(msg) -> MessageBox.Show msg |> ignore)
 
     let showResult result =
         drawTree treeView.Items result.BiculsterTree
@@ -156,11 +160,13 @@ let start() =
     bgwkr.RunWorkerCompleted.Add(fun ea ->
         statusBar.Text <- "Updating UI ..."
         stopwatch.Stop()
-        showResult (ea.Result :?> Result))
+        if ea.Result <> null then
+            showResult (ea.Result :?> Result))
     bgwkr.RunWorkerAsync()
                 
 /// create the UI and wire up
 let main() =
+    opmlUrl.Text <- sprintf @"%s\combined.opml" (Directory.GetCurrentDirectory())
     postBrowser.IsVisibleChanged.Add(fun ea ->
         if postBrowser.IsVisible && currentUrl.Text <> "" then
             postBrowser.Navigate(new Uri(currentUrl.Text)) )
