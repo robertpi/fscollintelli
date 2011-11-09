@@ -64,6 +64,31 @@ module Measures =
                         * (sumSq2 - (sum2 * sum2) / len))
         if den = 0. then 0. else num / den
 
+    // Returns the Manhattan distance for p1 and p2    
+    let sim_manhattan (wc1: seq<float>) (wc2: seq<float>) =
+        // Add up the absolute differences
+        let absDiffs = Seq.map2 (fun x y -> abs (x - y)) wc1 wc2 
+        let sum = Seq.fold (+) 0. absDiffs
+        1. / (1. + sum)   
+
+    // Returns the Chebyshev distance for p1 and p2  
+    let sim_chebyshev (wc1: seq<float>) (wc2: seq<float>) =
+        let absDiffs = Seq.map2 (fun x y -> abs (x - y)) wc1 wc2 
+        let max = Seq.max absDiffs
+        1. / (1. + max) 
+
+    let sim_jaccard (wc1: seq<float>) (wc2: seq<float>) =
+        let zippedItems = Seq.zip wc1 wc2
+        let dividend =
+          Seq.fold
+            (fun acc (x, y) ->
+               // If the same add one to dividend
+               // (replies on the fact our input float list is are actually integers)
+               if (int x)  = (int y) then
+                 acc + 1.
+               else acc) 0. zippedItems
+        dividend / float (Seq.length zippedItems)
+
 module UIHelpers =
     open System.Windows.Media.Imaging
     open System.Windows
